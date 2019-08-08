@@ -1,0 +1,562 @@
+[
+	{
+		"id": 10001,
+		"name": "木桩",
+		"skill_common": [],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 200
+			}
+		]
+	},
+
+	{
+		"id": 10002,
+		"name": "野兔",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 400
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 20
+			}
+		]
+	},
+
+	{
+		"id": 10003,
+		"name": "凶狼",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 600
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 25
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 10
+			}
+		]
+	},
+
+	{
+		"id": 10004,
+		"name": "阿幺",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [
+			{
+				"id": 1002,
+				"lv": 1
+			}
+		],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 1000
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 20
+			}
+		]
+	},
+
+	{
+		"id": 10005,
+		"name": "强盗",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [
+			{
+				"id": 1004,
+				"lv": 1
+			}
+		],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 600
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 20
+			}
+		]
+	},
+
+	{
+		"id": 10006,
+		"name": "土匪",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 800
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 20
+			}
+		]
+	},
+
+	{
+		"id": 10007,
+		"name": "土匪头目",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 1000
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 40
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 20
+			}
+		]
+	},
+
+	{
+		"id": 10008,
+		"name": "阿顺",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [
+			{
+				"id": 1003,
+				"lv": 3
+			}
+		],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 2000
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 80
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 40
+			}
+		]
+	},
+
+	{
+		"id": 10009,
+		"name": "家仆",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 1000
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 50
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 20
+			}
+		]
+	},
+
+	{
+		"id": 10010,
+		"name": "打手",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 1200
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 60
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 30
+			}
+		]
+	},
+
+	{
+		"id": 10011,
+		"name": "管家",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 1500
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 60
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 40
+			}
+		]
+	},
+
+	{
+		"id": 10012,
+		"name": "吴财道",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [
+			{
+				"id": 1003,
+				"lv": 3
+			}
+		],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 2000
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 90
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 100
+			}
+		]
+	},
+
+	{
+		"id": 10013,
+		"name": "衙役",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 1200
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 60
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 30
+			}
+		]
+	},
+
+	{
+		"id": 10014,
+		"name": "衙役头目",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 1500
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 80
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 40
+			}
+		]
+	},
+
+	{
+		"id": 10015,
+		"name": "师爷",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 2000
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 100
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 40
+			}
+		]
+	},
+
+	{
+		"id": 10016,
+		"name": "汪诗书",
+		"skill_common": [
+			{
+				"id": 1001,
+				"lv": 1
+			}
+		],
+		"skill_extra": [
+			{
+				"id": 1003,
+				"lv": 3
+			}
+		],
+		"aura": [],
+		"props": [
+			{
+				"id": 0,
+				"part": 0,
+				"val": 3000
+			},
+			{
+				"id": 1,
+				"part": 0,
+				"val": 30
+			},
+			{
+				"id": 2,
+				"part": 0,
+				"val": 200
+			},
+			{
+				"id": 3,
+				"part": 0,
+				"val": 60
+			}
+		]
+	}
+
+]
