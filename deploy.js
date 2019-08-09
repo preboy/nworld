@@ -6,9 +6,9 @@ exports.gameId = gameId;
 exports.addr = "0.0.0.0";
 exports.port = 20000 + gameId;
 
-// http svr port
-exports.hsvr_addr = '0.0.0.0';
-exports.hsvr_port = 21000 + gameId;
+// http service port
+exports.hsvc_addr = '0.0.0.0';
+exports.hsvc_port = 21000 + gameId;
 
 // mongodb addr
 exports.dbGame = `mongodb://mongouser:mongopass@118.24.48.149:27017/nw_game${gameId}?authSource=admin`;

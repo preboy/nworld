@@ -1,17 +1,30 @@
 require("./core");
 
+let hsvc = require("./hsvc");
+
+
 g_load_module('.', 'deploy');
 
 
 
-console.log(gDeploy);
 
 
 
 // 启动网络
 
 
+hsvc.Start();
+
+
 let [conf, mconf] = g_get_conf('CreatureTeam');
 
 
-// gDb.got().
+
+// ----------------------------------------------------------------------------
+// process events
+
+process.on('uncaughtException', (err) => {
+    console.error('uncaughtException', err);
+});
+
+
