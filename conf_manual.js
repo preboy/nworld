@@ -2,10 +2,10 @@
 
 let funcs = {
 
-    Creature(conf, mconf){
+    Creature(conf, mconf) {
     },
 
-    CreatureTeam(conf, mconf){
+    CreatureTeam(conf, mconf) {
 
     },
 }
@@ -14,9 +14,9 @@ let funcs = {
 
 // ----------------------------------------------------------------------------
 
-exports.tidy = function(fname, conf, mconf){
+exports.tidy = function (fname, conf, mconf) {
     let func = funcs[fname];
-    if (func){
+    if (func) {
         func(conf, mconf)
     }
 }

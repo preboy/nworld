@@ -1,4 +1,4 @@
 module.exports = [
-    ['Creature',        ['id']],
-    ['CreatureTeam',    ['id']],
+    ['Creature', ['id']],
+    ['CreatureTeam', ['id']],
 ]

@@ -4,21 +4,21 @@ let gvarEvents = global.gvarEvents;
 
 // ----------------------------------------------------------------------------
 
-exports.Fire = function(evtId, ...args){
+exports.Fire = function (evtId, ...args) {
     let evts = gvarEvents[evtId];
-    if (evts){
-        for(let k in evts){
+    if (evts) {
+        for (let k in evts) {
             try {
                 evts[k](evtId, ...args);
-            } catch (err){
+            } catch (err) {
                 console.log(`exports.Fire ERROR: ${evtId}`, err);
             }
         }
     }
 }
 
-exports.On = function(evtId, key, fn){
-    if(!gvarEvents[evtId]){
+exports.On = function (evtId, key, fn) {
+    if (!gvarEvents[evtId]) {
         gvarEvents[evtId] = {};
     }
 

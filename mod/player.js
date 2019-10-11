@@ -1,16 +1,16 @@
 
 class Player {
 
-    constructor(data){
+    constructor(data) {
         this.data = data;
     }
 
-    Init(){
+    Init() {
         this.init_base();
 
         this.init_bag();
 
-        if(!this.data.bag) {
+        if (!this.data.bag) {
             this.data.bag = {};
         }
         let ret = gModBag.InitData(this.data.bag);
@@ -19,31 +19,31 @@ class Player {
         }
     }
 
-    GetBag(){
+    GetBag() {
         return this.data.bag;
     }
 
     init_base() {
-        if(!this.data.name) {
+        if (!this.data.name) {
             this.data.name = 'lord-1';
         }
     }
 
-    init_bag(){
+    init_bag() {
         gModBag.Init(this.data)
     }
 
-    init_hero(){
+    init_hero() {
 
     }
 
-// ------------------------------------------
+    // ------------------------------------------
 
-    GetId(){
+    GetId() {
         return 1;
     }
 
-    GetName(){
+    GetName() {
         return 'zcg';
     }
 }

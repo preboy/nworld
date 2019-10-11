@@ -14,26 +14,26 @@ function LoadPlrData(id, callback) {
     // mongodb load
 }
 
-function GetPlrData(id){
+function GetPlrData(id) {
     return gvarPlayers[id];
 }
 
 // 初始化各个模块数据
-function InitData(pdata){
+function InitData(pdata) {
     gModBag.InitData(pdata);
     // to be continue
 }
 
 // ----------------------------------------------------------------------------
 
-function init(){
-    for(let k in gvarPlayers) {
+function init() {
+    for (let k in gvarPlayers) {
         let p = gvarPlayers[k];
         InitData(p);
     }
 }
 
-function release(){
+function release() {
 }
 
 // ----------------------------------------------------------------------------

@@ -21,7 +21,7 @@ function register_handler(op, fn) {
 }
 
 function RegisterHandlers(obj) {
-    for(let k in obj) {
+    for (let k in obj) {
         register_handler(k, obj[k]);
     }
 }

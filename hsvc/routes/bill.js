@@ -1,5 +1,5 @@
 const express = require('express');
-let   router = express.Router();
+let router = express.Router();
 
 let path = require.resolve('./bill_handlers.js');
 let handlers = require(path);
@@ -14,7 +14,7 @@ function reload() {
 
 
 function set_platform(method, platform) {
-    router[method](`/${platform}`, function(req, res) {
+    router[method](`/${platform}`, function (req, res) {
         let handler = handlers[platform];
         if (handler) {
             handler(req, res);
@@ -26,14 +26,14 @@ function set_platform(method, platform) {
 // ----------------------------------------------------------------------------
 // 纯属补救措施
 
-router.get('/reload', function(req, res) {
+router.get('/reload', function (req, res) {
     reload();
     res.end('SUCC');
 });
 
 
-router.get('/add_platform', function(req, res) {
-    let method   = req.query.method;
+router.get('/add_platform', function (req, res) {
+    let method = req.query.method;
     let platform = req.query.platform;
 
     // verify simply
@@ -48,14 +48,14 @@ router.get('/add_platform', function(req, res) {
     }
 
     set_platform(method, platform);
-    
+
     res.end('SUCC');
 });
 
 
-set_platform('get',     'wx');
-set_platform('get',     'vivo');
-set_platform('post',    'huawei');
+set_platform('get', 'wx');
+set_platform('get', 'vivo');
+set_platform('post', 'huawei');
 
 
 // ----------------------------------------------------------------------------

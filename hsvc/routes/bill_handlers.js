@@ -1,13 +1,13 @@
-exports.wx = function(req, res) {
+exports.wx = function (req, res) {
     res.end('wx');
 };
 
 
-exports.huawei = function(req, res) {
+exports.huawei = function (req, res) {
     res.end('huawei');
 };
 
 
-exports.vivo = function(req, res) {
+exports.vivo = function (req, res) {
     res.end('vivo');
 };

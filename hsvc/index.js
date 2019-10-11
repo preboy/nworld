@@ -1,11 +1,11 @@
-const app   = require('./app');
-const http  = require('http');
+const app = require('./app');
+const http = require('http');
 const debug = require('debug')('auth:server');
 
 
 let server = http.createServer(app);
 
-server.on('error',     onError);
+server.on('error', onError);
 server.on('listening', onListening);
 
 
@@ -18,12 +18,12 @@ function onError(error) {
 
     // handle specific listen errors with friendly messages
     switch (error.code) {
-    case 'EADDRINUSE':
-        console.error(bind + ' is already in use');
-        process.exit(1);
-        break;  
-    default:
-        throw error;
+        case 'EADDRINUSE':
+            console.error(bind + ' is already in use');
+            process.exit(1);
+            break;
+        default:
+            throw error;
     }
 }
 
