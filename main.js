@@ -1,22 +1,62 @@
-require("./core");
 
-let hsvc = require("./hsvc");
+
+// ----------------------------------------------------------------------------
+// load module
+
+const readline = require("readline");
+
+require("./core");
+require('./handler');
 
 
 g_load_module('.', 'deploy');
+let cmder = g_load_module('.', 'cmder');
 
 
-// 启动网络
-require('./handler');
-require('./net_mgr.js');
+let hsvc = require("./hsvc");
+let net_mgr = require('./net_mgr.js');
 
 
-hsvc.Start();
-
-
+// load config
 let [conf, mconf] = g_get_conf('CreatureTeam');
 
 
+// do start
+on_start();
+
+
+const xterm = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+})
+
+if (xterm) {
+    xterm.setPrompt("server# ");
+    xterm.prompt();
+
+    xterm.on('line', function (str) {
+        if (str == "quit") {
+            xterm.close();
+            ProcessExit();
+            return;
+        } else {
+            cmder.Parse(str);
+        }
+        xterm.prompt();
+    });
+}
+
+
+// event
+function on_start() {
+    hsvc.Start();
+    net_mgr.Start();
+}
+
+function on_stop() {
+    net_mgr.Stop();
+    hsvc.Stop();
+}
 
 // ----------------------------------------------------------------------------
 // process events
@@ -25,15 +65,19 @@ process.on('uncaughtException', (err) => {
     console.error('uncaughtException', err);
 });
 
-
 // process signal
-process.on('SIGINT', beforeExit);
-process.on('SIGHUP', beforeExit);
-process.on('SIGTERM', beforeExit);
-process.on('SIGQUIT', beforeExit);
-process.on('SIGABRT', beforeExit);
+process.on('SIGINT', on_signal);
+process.on('SIGHUP', on_signal);
+process.on('SIGTERM', on_signal);
+process.on('SIGQUIT', on_signal);
+process.on('SIGABRT', on_signal);
 
-function beforeExit(signal) {
-    console.log(`收到信号: ${signal}`);
+function on_signal(sig) {
+    console.log(`收到信号: ${sig}`);
+    ProcessExit();
+}
+
+function ProcessExit() {
+    on_stop();
     process.exit(0);
 }

@@ -24,4 +24,3 @@ exports.On = function (evtId, key, fn) {
 
     gvarEvents[evtId][key] = fn;
 }
-

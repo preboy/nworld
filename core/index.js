@@ -35,4 +35,6 @@ global.g_load_module = function (dir, file) {
 g_load_module('core', 'global');
 g_load_module('core', 'evt_mgr');
 g_load_module('core', 'conf');
+g_load_module('core', 'utils');
 g_load_module('core', 'assign');
+g_load_module('core', 'tcp_mgr');

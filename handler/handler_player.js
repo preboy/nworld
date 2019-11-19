@@ -1,12 +1,12 @@
 let handlers = {
 
     // 消息1
-    fuck(msg) {
+    fuck(ws, msg) {
         console.log("this is fuck");
     },
 
     // 消息2
-    fuckyou(msg) {
+    fuckyou(ws, msg) {
         console.log("fuckyou");
     },
 }
