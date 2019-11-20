@@ -6,7 +6,6 @@ class Session {
         this.recv_buffer = null;
         this.sending = false;
         this.send_queue = [];
-        this.closed = false;
 
         c.setTimeout(10 * 1000);
 
@@ -72,15 +71,14 @@ class Session {
             }
         });
 
-        c.on('close', (has_error) => {
-            this.closed = true;
+        c.on('close', (had_error) => {
             mgr.on_closed(this);
-            console.log("socket closed, err = ", has_error);
+            console.log("socket closed, err = ", had_error);
         });
     }
 
     Send(packet) {
-        if (this.closed) {
+        if (this.socket.destroyed) {
             return;
         }
 
@@ -109,7 +107,7 @@ class Session {
     }
 
     Stop() {
-        if (this.closed) {
+        if (!this.socket.destroyed) {
             this.socket.end();
         }
     }
