@@ -11,19 +11,20 @@ server.on('listening', onListening);
 
 // ----------------------------------------------------------------------------
 
-function onError(error) {
-    if (error.syscall !== 'listen') {
-        throw error;
+function onError(err) {
+    if (err.syscall !== 'listen') {
+        throw err;
     }
 
     // handle specific listen errors with friendly messages
-    switch (error.code) {
+    let addr = server.address();
+    switch (err.code) {
         case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
+            console.error(`port ${addr.port} is already in use`);
             process.exit(1);
             break;
         default:
-            throw error;
+            throw err;
     }
 }
 
