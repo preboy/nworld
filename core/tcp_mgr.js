@@ -29,7 +29,7 @@ class Manager {
         }
 
         for (let k in this.rec) {
-            this.rec[k].end();
+            this.rec[k].Stop();
         }
 
         this.tid = 0;

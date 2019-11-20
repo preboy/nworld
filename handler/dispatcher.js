@@ -45,7 +45,7 @@ function OnRecvTcpPacket(sess, code, body) {
         return;
     }
 
-    console.warn(`OnRecvTcpPacket NOT found hander:`, code);
+    // console.warn(`OnRecvTcpPacket NOT found hander:`, code);
 }
 
 function RegisterTcpHandler(op, fn) {

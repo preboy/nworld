@@ -41,7 +41,7 @@ function tcp_start() {
         gHandlerDispatcher.OnRecvTcpPacket(sess, code, body);
 
         // just for test
-        sess.send(packet);
+        sess.Send(packet);
     });
 
     mgr.Start();

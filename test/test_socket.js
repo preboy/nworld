@@ -1,9 +1,10 @@
 const net  	 = require('net')
 const colors = require('colors');
 
-const common  = require('./common.js');
-const session = require('./session.js');
-const dispatcher = require("./dispatcher.js");
+const utils  = require('../core/utils.js');
+const session = require('../core/tcp_session.js');
+
+const deploy = require('../deploy.js');
 
 
 colors.setTheme({
@@ -30,9 +31,9 @@ var mgr_cli = {
         rec[sess.sid] = sess;
         cnt++;
 
-        sess._buff = common.gen_packet();
+        sess._buff = utils.NewPacket();
         sess._send = +new Date();
-        sess.send(sess._buff);
+        sess.Send(sess._buff);
     },
 
     on_closed(sess) {
@@ -41,8 +42,7 @@ var mgr_cli = {
     },
 
     on_packet(sess, packet) {
-        dispatcher.dispatch(sess, packet);
-
+        console.log(`收到回应包:${sess.sid}`);
         var now = +new Date();
         var dur = (now - sess._send) / 1000;
 
@@ -57,9 +57,9 @@ var mgr_cli = {
 
         sess._buff = null;
         setTimeout(()=>{
-            sess._buff = common.gen_packet();
+            sess._buff = utils.NewPacket();
             sess._send = +new Date();
-            sess.send(sess._buff);
+            sess.Send(sess._buff);
         }, 3000);
     },
 }
@@ -69,10 +69,11 @@ let tms = 0;
 
 let tid = setInterval(() => {
 
-    let c = net.createConnection(8080, "118.24.48.149");
+    let c = net.createConnection(deploy.tcp_port, "118.24.48.149");
 
     c.on('connect', () => {
         var sess = new session.Session(c, sid, mgr_cli);
+        mgr_cli.on_connection(sess);
         sid++;
     });
 

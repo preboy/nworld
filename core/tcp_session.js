@@ -6,6 +6,7 @@ class Session {
         this.recv_buffer = null;
         this.sending = false;
         this.send_queue = [];
+        this.closed = false;
 
         c.setTimeout(10 * 1000);
 
@@ -72,12 +73,17 @@ class Session {
         });
 
         c.on('close', (has_error) => {
+            this.closed = true;
             mgr.on_closed(this);
             console.log("socket closed, err = ", has_error);
         });
     }
 
     Send(packet) {
+        if (this.closed) {
+            return;
+        }
+
         let data = Buffer.allocUnsafe(packet.byteLength + 4);
         data.writeUInt32LE(packet.byteLength);
         data.fill(packet, 4);
@@ -99,6 +105,12 @@ class Session {
         if (!ret) {
             this.sending = true;
             console.log("data queued in user memory!");
+        }
+    }
+
+    Stop() {
+        if (this.closed) {
+            this.socket.end();
         }
     }
 }

@@ -24,7 +24,7 @@ let [conf, mconf] = g_get_conf('CreatureTeam');
 // do start
 on_start();
 
-
+// command parser
 const xterm = readline.createInterface({
     input: process.stdin,
     output: process.stdout,

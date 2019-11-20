@@ -8,6 +8,7 @@ let handlers = {
     // 消息2
     fuckyou(ws, msg) {
         console.log("fuckyou");
+        ws.send(JSON.stringify(msg));
     },
 }
 
