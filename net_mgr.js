@@ -7,7 +7,7 @@ const tcp = g_load_module('core', 'tcp_mgr');
 let wss;
 function wss_start() {
     wss = new WebSocket.Server({
-        port: 8080,
+        port: gDeploy.wss_port,
         clientTracking: true,
     });
 
@@ -45,7 +45,7 @@ function tcp_start() {
     });
 
     mgr.Start();
-    svr.Start();
+    svr.Start(gDeploy.tcp_host, gDeploy.tcp_port);
 }
 
 function tcp_close() {

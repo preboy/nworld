@@ -92,7 +92,7 @@ class Server {
         this.mgr.set_server(this);
     }
 
-    Start() {
+    Start(host, port) {
         this.svr = net.createServer((c) => {
             this.mgr.on_connection(c);
         });
@@ -102,7 +102,7 @@ class Server {
             throw err;
         });
 
-        this.svr.listen(8080, "0.0.0.0");
+        this.svr.listen(port, host);
     }
 
     Stop() {
