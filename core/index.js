@@ -1,6 +1,5 @@
 const path = require('path');
 
-
 // ----------------------------------------------------------------------------
 
 global.g_capital = function (str) {

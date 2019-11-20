@@ -57,7 +57,7 @@ class Session {
 
         c.on('timeout', () => {
             console.log('socket timeout: ', this.sid);
-            c.end();
+            c.destroy();
         });
 
         c.on('drain', () => {
