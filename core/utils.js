@@ -1,8 +1,9 @@
-// 返回一个介于min和max之间的整型随机数
+// 返回随机整数[min, max)
 function RandIntRange(min, max) {
-	return Math.floor(Math.random() * (max - min + 1) + min);
+	return Math.floor(Math.random() * (max - min) + min);
 }
 
+// 返回随机整数[0, max)
 function RandInt(max) {
 	return RandIntRange(0, max);
 }

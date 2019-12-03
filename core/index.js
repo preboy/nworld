@@ -25,6 +25,7 @@ global.g_load_module = function (dir, file) {
         mod.init();
     }
 
+    mod.__mod_name = name;
     global[name] = mod;
     return mod;
 }

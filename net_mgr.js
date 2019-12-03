@@ -23,7 +23,7 @@ function wss_start() {
     });
 }
 
-function wss_close() {
+function wss_stop() {
     wss.close(null);
     console.log("wss closed");
 }
@@ -48,7 +48,7 @@ function tcp_start() {
     svr.Start(gDeploy.tcp_host, gDeploy.tcp_port);
 }
 
-function tcp_close() {
+function tcp_stop() {
     svr.Stop();
     mgr.Stop();
 
@@ -64,6 +64,6 @@ exports.Start = function () {
 }
 
 exports.Stop = function () {
-    wss_close();
-    tcp_close();
+    wss_stop();
+    tcp_stop();
 }

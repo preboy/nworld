@@ -1,18 +1,19 @@
 // ----------------------------------------------------------------------------
 // load module
 
-const readline = require("readline");
+const readline = require('readline');
 
-require("./core");
+require('./core');
 require('./handler');
 
 
+g_load_module('.', 'cmder');
+g_load_module('.', 'const')
 g_load_module('.', 'deploy');
-let cmder = g_load_module('.', 'cmder');
 
-
-let hsvc = require("./hsvc");
-let net_mgr = require('./net_mgr.js');
+g_load_module('.', 'hsvc');
+g_load_module('.', 'db_mgr');
+g_load_module('.', 'net_mgr');
 
 
 // load config
@@ -26,19 +27,19 @@ on_start();
 const xterm = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-})
+});
 
 if (xterm) {
-    xterm.setPrompt("server# ");
+    xterm.setPrompt('server# ');
     xterm.prompt();
 
     xterm.on('line', function (str) {
-        if (str == "quit") {
+        if (str == 'quit') {
             xterm.close();
             ProcessExit();
             return;
         } else {
-            cmder.Parse(str);
+            gCmder.Parse(str);
         }
         xterm.prompt();
     });
@@ -47,13 +48,21 @@ if (xterm) {
 
 // event
 function on_start() {
-    hsvc.Start();
-    net_mgr.Start();
+    gDbMgr.Start(() => {
+        gCoreEvtMgr.Fire(gConst.EVT_REDIS_READY);
+    });
+    gCoreEvtMgr.Once(gConst.EVT_SYS_READY, () => {
+        gHsvc.Start();
+        gNetMgr.Start();
+
+        console.log('server is ready');
+    });
 }
 
 function on_stop() {
-    net_mgr.Stop();
-    hsvc.Stop();
+    gNetMgr.Stop();
+    gHsvc.Stop();
+    gDbMgr.Stop();
 }
 
 // ----------------------------------------------------------------------------
@@ -62,6 +71,7 @@ function on_stop() {
 process.on('uncaughtException', (err) => {
     console.error('uncaughtException', err);
 });
+
 
 // process signal
 process.on('SIGINT', on_signal);
@@ -75,7 +85,22 @@ function on_signal(sig) {
     ProcessExit();
 }
 
+let stoping = false;
 function ProcessExit() {
+    if (stoping) {
+        return;
+    }
+
+    stoping = true;
     on_stop();
-    process.exit(0);
+
+    let i = 1;
+    setInterval(() => {
+        i--;
+        if (i == 0) {
+            process.exit(0);
+        }
+
+        console.log(`server will STOP after ${i} sec`);
+    }, 1000);
 }
