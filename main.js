@@ -50,7 +50,9 @@ if (xterm) {
 function on_start() {
     gDbMgr.Start(() => {
         gCoreEvtMgr.Fire(gConst.EVT_REDIS_READY);
+        gCoreEvtMgr.Fire(gConst.EVT_SYS_READY);
     });
+
     gCoreEvtMgr.Once(gConst.EVT_SYS_READY, () => {
         gHsvc.Start();
         gNetMgr.Start();

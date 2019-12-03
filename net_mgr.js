@@ -24,8 +24,9 @@ function wss_start() {
 }
 
 function wss_stop() {
-    wss.close(null);
-    console.log("wss closed");
+    if (wss) {
+        wss.close(null);
+    }
 }
 
 // ----------------------------------------------------------------------------
