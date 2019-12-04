@@ -9,15 +9,26 @@ exports.Parse = function (str) {
         return;
     }
 
-    let cmd = str.split(re);
-    let name = cmd[0];
+    let args = [];
+    str.split(re).forEach((v) => {
+        let arg = v.trim();
+        if (arg.length) {
+            args.push(arg);
+        }
+    });
+
+    if (!args.length) {
+        return;
+    }
+
+    let name = args[0];
     let func = cmds[name];
 
     if (func) {
-        cmd.shift();
-        func.apply(null, cmd);
+        args.shift();
+        func.apply(null, args);
     } else {
-        console.log("invalid command!!!", cmd[0]);
+        console.log("invalid command!!!", args[0]);
     }
 }
 
