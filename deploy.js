@@ -14,7 +14,10 @@ exports.hsvc_addr = '0.0.0.0';
 exports.hsvc_port = 22000 + gameId;
 
 exports.redis = {
-    password:'123456',
+    db: 2,
+    port: 6379,
+    host: '118.24.48.149',
+    password: '123456',
 };
 
 // mongodb addr

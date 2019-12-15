@@ -1,6 +1,7 @@
 // ----------------------------------------------------------------------------
 // load module
 
+const colors = require('colors');
 const readline = require('readline');
 
 require('./core');
@@ -96,13 +97,13 @@ function ProcessExit() {
     stoping = true;
     on_stop();
 
-    let i = 1;
+    let i = 4;
     setInterval(() => {
         i--;
         if (i == 0) {
             process.exit(0);
         }
 
-        console.log(`server will STOP after ${i} sec`);
+        console.log(`server will STOP after ${i} sec`.red);
     }, 1000);
 }
