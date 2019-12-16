@@ -9,6 +9,13 @@ function initial_plr_data() {
         Coin: 0,    // 金币
         Gold: 0,    // 元宝(充值获得)
         Card: 0,    // 房卡
+        Name: '',   // 玩家名
+
+        Play: {   // 游戏数据
+            rid: 0,    // 当前房间ID
+            tid: 0,    // 当前桌子ID
+            pos: 0,    // 当前位置
+        },
     }
 }
 
@@ -25,6 +32,14 @@ class Player {
 
     plr_data() {
         return this.data;
+    }
+
+    GetName() {
+        return this.data.Name;
+    }
+
+    GetData() {
+        return this.Data.Play;
     }
 
     save(force = false) {

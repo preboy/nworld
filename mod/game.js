@@ -10,15 +10,23 @@ const STAGE_LAST = [
     380,    // 结算阶段最长时间
 ];
 
+const MAX_SEATS_CNT = 18;
+
 
 class Table {
     constructor(cfg) {
         this.id = 0;            // 每一局所需要的金币数
         this.cfg = cfg;         // 配置
-        this.all_plrs = {};
+
+        this.all_plrs = {};     // 进入到本桌的玩家   pid -> plr
+        this.seats = [];        // 桌子上作的一圈玩家 [pid,...]，注意：0号位置不使用
+        for (let i = 0; i < MAX_SEATS_CNT; i++) {
+            this.seats[i] = null;
+        }
 
         this.bout_cnt = 0;
-        this.bout_plrs = [];                // 参加本局的玩家
+        this.bout_plrs = [];                // 参加本局的玩家 (seats索引)
+        this.bout_host = 1;                 // 庄
         this.bout_stage = STAGE_CALC;       // 本局阶段(STAGE_XXX)
         this.bout_start = 0;                // 本局开始时间
     }
@@ -36,6 +44,7 @@ class Table {
 
         this.bout_stage++;
         this.bout_start = now();
+
         if (this.bout_stage > STAGE_CALC) {
             this.bout_stage = STAGE_SIGN;
         }
@@ -67,11 +76,34 @@ class Table {
     }
 
     join(plr) {
-        this.all_plrs[plr.id] = plr;
+        let pid = plr.pid;
+
+        // 已经存在
+        if (this.all_plrs[pid]) {
+            return false;
+        }
+
+        // 是否有空位
+        let pos = this.find_empty_seat();
+        if (pos == 0) {
+            return false;
+        }
+
+        this.all_plrs[pid] = plr;
+        this.seats[pos] = pid;
+
+        return true;
     }
 
     leave(plr) {
-        delete this.all_plrs[plr.id];
+        let pid = plr.pid;
+
+        let pos = find_player_seat(pid);
+        if (pos) {
+            this.seats[pos] = null;
+        }
+
+        delete this.all_plrs[pid];
     }
 
     next_bout() {
@@ -128,6 +160,37 @@ class Table {
 
     // ------------------------------------------------------------------------
     // game event
+
+    find_empty_seat() {
+        for (let i = 1; i < MAX_SEATS_CNT; i++) {
+            if (!this.seats[i]) {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    find_player_seat(pid) {
+        for (let i = 1; i < MAX_SEATS_CNT; i++) {
+            if (this.seats[i] == pid) {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    get_plr_cnt() {
+        let cnt = 0;
+        for (let i = 1; i < MAX_SEATS_CNT; i++) {
+            if (this.seats[i]) {
+                cnt++;
+            }
+        }
+
+        return cnt;
+    }
 
     // 报名
 
