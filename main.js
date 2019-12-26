@@ -56,7 +56,7 @@ function on_start() {
         gCoreEvtMgr.Fire(gConst.EVT_SYS_READY);
     });
 
-    // gModGame.Start();
+    gModGame.Start();
     gPlrMgr.Start();
 
     gCoreEvtMgr.Once(gConst.EVT_SYS_READY, () => {
@@ -72,7 +72,7 @@ function on_stop() {
     gHsvc.Stop();
 
     gPlrMgr.Stop();
-    // gModGame.Stop();
+    gModGame.Stop();
 
     gDbMgr.Stop();
 }

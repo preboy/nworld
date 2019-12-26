@@ -53,6 +53,6 @@ cmds.reload = function (dir, file) {
 }
 
 cmds.save = function () {
-    // gModGame.Save();
+    gModGame.Save();
     gPlrMgr.Save();
 }

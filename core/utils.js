@@ -24,11 +24,24 @@ function NewPacket() {
 	return buf;
 }
 
+// 打乱数组
+function Shuffle(arr) {
+	let l = arr.length;
+	for (let i = 0; i < l; i++) {
+		let r = RandInt(l);
+		if (r != i) {
+			[arr[i], arr[r]] = [arr[r], arr[i]];
+		}
+	}
+}
+
 // ----------------------------------------------------------------------------
 
 module.exports = {
 	RandIntRange,
 	RandInt,
+
+	Shuffle,
 
 	NewPacket,
 }

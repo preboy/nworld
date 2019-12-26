@@ -33,7 +33,7 @@ function initial_plr_data() {
         Coin: 0,    // 金币
         Gold: 0,    // 元宝(充值获得)
         Card: 0,    // 房卡
-        Name: '',   // 玩家名
+        Name: rand_nickname(),
 
         Play: {   // 游戏数据
             rid: 0,    // 当前房间ID
@@ -92,6 +92,14 @@ class Player {
         } catch (err) {
             console.error(`JSON.stringify error: pid=${this.pid}, err=`, err);
         }
+    }
+
+    SendMsg(msg) {
+        this.SendStr(JSON.stringify(msg));
+    }
+
+    SendStr(txt) {
+        // TODO
     }
 }
 
@@ -164,7 +172,7 @@ function Stop() {
 
 module.exports = {
     FindPlr,    // 查找玩家，可能不存在
-    GetPlr,     // 查找玩家，不存在就创建玩家对象，提供回调函数
+    GetPlr,     // 查找玩家，不存在就创建玩家对象
 
     Start,
     Stop,

@@ -11,7 +11,7 @@ router.get('/reload', function (req, res) {
 });
 
 router.get('/save', function (req, res) {
-    // gModGame.Save();
+    gModGame.Save();
     gPlrMgr.Save();
 
     res.json({ ret: 0, msg: 'OK' });
