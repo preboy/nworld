@@ -1,14 +1,16 @@
-global.gvarEvents = global.gvarEvents || {};
-let gvarEvents = global.gvarEvents;
+let mod_data = g_module_data(module, {
+    events: {},
+    once: {},
+});
 
-global.gvarOnceEvents = global.gvarOnceEvents || {};
-let gvarOnceEvents = global.gvarOnceEvents;
+let events = mod_data.events;
+let once = mod_data.once;
 
 
 // ----------------------------------------------------------------------------
 
 exports.Fire = function (evtId, ...args) {
-    let evts = gvarEvents[evtId];
+    let evts = events[evtId];
     if (evts) {
         for (let k in evts) {
             try {
@@ -19,7 +21,7 @@ exports.Fire = function (evtId, ...args) {
         }
     }
 
-    evts = gvarOnceEvents[evtId];
+    evts = once[evtId];
     if (evts) {
         evts.forEach((fn) => {
             try {
@@ -28,29 +30,30 @@ exports.Fire = function (evtId, ...args) {
                 console.log(`exports.Fire ERROR (ONCE): ${evtId}`, err);
             }
         });
-        delete gvarOnceEvents[evtId];
+
+        delete once[evtId];
     }
 }
 
 exports.On = function (evtId, key, fn) {
-    if (!gvarEvents[evtId]) {
-        gvarEvents[evtId] = {};
+    if (events[evtId] == undefined) {
+        events[evtId] = {};
     }
 
-    gvarEvents[evtId][key] = fn;
+    events[evtId][key] = fn;
 }
 
 exports.Off = function (evtId, key) {
-    let evts = gvarEvents[evtId];
+    let evts = events[evtId];
     if (evts) {
         delete evts[key];
     }
 }
 
 exports.Once = function (evtId, fn) {
-    if (!gvarOnceEvents[evtId]) {
-        gvarOnceEvents[evtId] = [];
+    if (once[evtId] == undefined) {
+        once[evtId] = [];
     }
 
-    gvarOnceEvents[evtId].push(fn);
+    once[evtId].push(fn);
 }

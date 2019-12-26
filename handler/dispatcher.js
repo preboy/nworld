@@ -1,35 +1,37 @@
 // ----------------------------------------------------------------------------
 // var
 
-global.gvarHandlers = global.gvarHandlers || {};
-let gvarHandlers = global.gvarHandlers;
+let mod_data = g_module_data(module, {
+    WsHandlers: {},
+    TcpHandlers: {},
+});
 
-global.gvarTcpHandlers = global.gvarTcpHandlers || new Map();
-let gvarTcpHandlers = global.gvarTcpHandlers;
+let WsHandlers = mod_data.WsHandlers;
+let TcpHandlers = mod_data.TcpHandlers;
 
 
 // ----------------------------------------------------------------------------
-// wss
+// ws
 
-function OnRecvPacket(ws, msg) {
+function OnRecvWsPacket(ws, msg) {
     if (msg.op) {
-        let fn = gvarHandlers[msg.op];
+        let fn = WsHandlers[msg.op];
         if (fn) {
             fn(ws, msg);
             return;
         }
     }
 
-    console.warn(`OnRecvPacket NOT found hander:`, msg);
+    console.warn(`OnRecvWsPacket NOT found hander:`, msg);
 }
 
-function register_handler(op, fn) {
-    gvarHandlers[op] = fn;
+function register_ws_handler(op, fn) {
+    WsHandlers[op] = fn;
 }
 
-function RegisterHandlers(obj) {
+function RegisterWsHandlers(obj) {
     for (let k in obj) {
-        register_handler(k, obj[k]);
+        register_ws_handler(k, obj[k]);
     }
 }
 
@@ -39,7 +41,7 @@ function RegisterHandlers(obj) {
 
 function OnRecvTcpPacket(sess, code, body) {
     let op = code;
-    let fn = gvarTcpHandlers[op];
+    let fn = TcpHandlers[op];
     if (fn) {
         fn(sess, code, body);
         return;
@@ -49,16 +51,15 @@ function OnRecvTcpPacket(sess, code, body) {
 }
 
 function RegisterTcpHandler(op, fn) {
-    gvarTcpHandlers[op] = fn;
+    TcpHandlers[op] = fn;
 }
 
 
 // ----------------------------------------------------------------------------
 
 module.exports = {
-
-    OnRecvPacket,
-    RegisterHandlers,
+    OnRecvWsPacket,
+    RegisterWsHandlers,
 
     OnRecvTcpPacket,
     RegisterTcpHandler,

@@ -1,5 +1,6 @@
 const WebSocket = require('ws');
-const tcp = g_load_module('core', 'tcp_mgr');
+
+g_load_module('core', 'tcp_mgr');
 
 // ----------------------------------------------------------------------------
 // wss listener
@@ -15,7 +16,7 @@ function wss_start() {
         ws.on('message', function (message) {
             try {
                 let msg = JSON.parse(message);
-                gHandlerDispatcher.OnRecvPacket(ws, msg);
+                gHandlerDispatcher.OnRecvWsPacket(ws, msg);
             } catch (err) {
                 console.error(`JSON.parse: ${err}`);
             }
@@ -35,8 +36,8 @@ function wss_stop() {
 let mgr;
 let svr;
 function tcp_start() {
-    mgr = new tcp.Manager();
-    svr = new tcp.Server(mgr);
+    mgr = new gCoreTcpMgr.Manager();
+    svr = new gCoreTcpMgr.Server(mgr);
 
     mgr.OnRecvPacket((sess, code, body, packet) => {
         gHandlerDispatcher.OnRecvTcpPacket(sess, code, body);

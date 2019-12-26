@@ -3,6 +3,30 @@ const PLAYERS_TABLE_NAME = 'players';
 
 // ----------------------------------------------------------------------------
 // data template
+let free_names = [
+    '梦中桃源',
+    '冰河铁骑',
+    '陌上如玉',
+    '玄境真君',
+    '西子霓裳',
+    '独藏乾坤',
+    '一去三生',
+    '踏月留香',
+    '掌缘生灭',
+    '大漠空回首',
+    '豪情满云天',
+    '暗情难述',
+    '相思成灰',
+    '风凌黄衫',
+];
+
+
+function rand_nickname() {
+    let idx = gCoreUtils.RandInt(free_names.length);
+    let rnd = gCoreUtils.RandIntRange(1000, 9999);
+
+    return `${free_names[idx]}_${rnd}`;
+}
 
 function initial_plr_data() {
     return {

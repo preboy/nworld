@@ -14,4 +14,4 @@ let handlers = {
 
 
 // ----------------------------------------------------------------------------
-gHandlerDispatcher.RegisterHandlers(handlers);
+gHandlerDispatcher.RegisterWsHandlers(handlers);

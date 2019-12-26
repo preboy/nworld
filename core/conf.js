@@ -1,7 +1,13 @@
 const assert = require('assert');
 
-global.gvarConfs = global.gvarConfs || {};
-let gvarConfs = global.gvarConfs;
+// ----------------------------------------------------------------------------
+// var
+
+let mod_data = g_module_data(module, {
+    confs: {},
+});
+
+let confs = mod_data.confs;
 
 let list;
 let manual;
@@ -54,7 +60,7 @@ function load_item(fname, keys) {
 
     manual.tidy(fname, conf, mconf);
 
-    gvarConfs[fname] = [conf, mconf];
+    confs[fname] = [conf, mconf];
 }
 
 function load_conf(fname) {
@@ -72,7 +78,7 @@ function load_confs() {
 }
 
 function get_conf(fname) {
-    let conf = gvarConfs[fname];
+    let conf = confs[fname];
     if (conf) {
         return conf;
     }

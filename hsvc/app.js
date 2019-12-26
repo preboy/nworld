@@ -1,11 +1,12 @@
-var createError = require('http-errors');
-var express = require('express');
-var logger = require('morgan');
+let createError = require('http-errors');
+let express = require('express');
+let logger = require('morgan');
+let path = require('path');
 
 // ----------------------------------------------------------------------------
 
 
-var app = express();
+let app = express();
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -15,6 +16,10 @@ app.use(function (req, res, next) {
     console.log([req._startTime.toLocaleString(), req.socket.remoteAddress || 'no ip', req.url, req.body, req.query]);
     next();
 });
+
+
+// static
+app.use(express.static(path.join(__dirname, 'public')));
 
 
 // ----------------------------------------------------------------------------

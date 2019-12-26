@@ -49,9 +49,10 @@ cmds.reload = function (dir, file) {
     }
 
     let mod = g_load_module(dir, file);
-    console.log(`reload '${dir}\/${file}'.js AS '${mod.__mod_name}'`);
+    console.log(`reload '${dir}\/${file}'.js AS '${mod.__m.__mod_name}'`);
 }
 
-cmds.hide = function (p1, p2, p3) {
-	console.log(p1, p2, p3);
+cmds.save = function () {
+    // gModGame.Save();
+    gPlrMgr.Save();
 }

@@ -1,5 +1,4 @@
 const net = require('net');
-const session = require('./tcp_session');
 
 // ----------------------------------------------------------------------------
 // tcp manager
@@ -42,7 +41,7 @@ class Manager {
 
     // event
     on_connection(c) {
-        let sess = new session.Session(c, this.sid, this);
+        let sess = new gCoreTcpSession.Session(c, this.sid, this);
         this.rec[sess.sid] = sess;
         this.cnt++;
         this.sid++;
