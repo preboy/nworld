@@ -36,12 +36,12 @@ const CARD_POINT_Q = 12;
 const CARD_POINT_K = 13;
 
 // 手牌类型
-const HAND_TYPE_1 = 1;  // 炸
-const HAND_TYPE_2 = 2;  // 顺金      
-const HAND_TYPE_3 = 3;  // 金花
-const HAND_TYPE_4 = 4;  // 顺子
-const HAND_TYPE_5 = 5;  // 对子
-const HAND_TYPE_6 = 6;  // 单
+const HAND_TYPE_6 = 6000000;  // 炸
+const HAND_TYPE_5 = 5000000;  // 同花顺
+const HAND_TYPE_4 = 4000000;  // 金花
+const HAND_TYPE_3 = 3000000;  // 顺子
+const HAND_TYPE_2 = 2000000;  // 对子
+const HAND_TYPE_1 = 1000000;  // 单
 
 class Card {
     constructor(type, point) {
@@ -60,9 +60,92 @@ let playing = JSON.stringify({
     score: 0,           // 牌面得分
 });
 
-// 计算得分
-function calc_score(card1, card2, card3) {
+// 计算一副牌的分值，用于比较谁的牌大
+function calc_score(c1, c2, c3) {
+    let arr = [c1, c2, c3];
+    arr.sort((a, b) => {
+        return a.point - b.point;
+    });
 
+    // 炸
+    if (c1.point == c3.point) {
+        if (c1.point == CARD_POINT_A) {
+            return HAND_TYPE_6 + 14;
+        }
+        return HAND_TYPE_6 + c1.point;
+    }
+
+    let seq = false;    // 顺子
+    let akj = false;    // 同花
+
+    if (arr[0].type == arr[1].type && arr[0].type == arr[2].type) {
+        akj = true;
+    }
+
+    let score;
+    if (arr[1].point == arr[0].point + 1 && arr[1].point == arr[2].point - 1) {
+        seq = true;
+        score = arr[2].point;
+    } else {
+        if (arr[0].point == CARD_POINT_A && arr[1].point == CARD_POINT_Q && arr[2].point == CARD_POINT_K) {
+            seq = true;
+            score = 14;
+        }
+    }
+
+    if (akj) {
+        // 同花顺
+        if (seq) {
+            return HAND_TYPE_5 + score;
+        }
+
+        // 同花
+        if (arr[0] != CARD_POINT_A) {
+            return HAND_TYPE_4 + arr[2].point * 10000 + arr[1].point * 100 + arr[0].point;
+        }
+
+        return HAND_TYPE_4 + 14 * 10000 + arr[2].point * 100 + arr[1].point;
+    }
+
+    if (seq) {
+        if (arr[0].point == 1 && arr[1].point == 12 && arr[2].point == 13) {
+            return HAND_TYPE_3 + 14;
+        }
+
+        return HAND_TYPE_3 + arr[2].point
+    }
+
+    let pair;
+    // 对子判断
+    if (arr[0].point == arr[1].point) {
+        pair = [arr[0].point, arr[2].point];
+    }
+
+    if (arr[1].point == arr[2].point) {
+        pair = [arr[1].point, arr[0].point];
+    }
+
+    if (pair) {
+        if (pair[0] == CARD_POINT_A) {
+            return HAND_TYPE_2 + 14 * 10000 + pair[1];
+        }
+        return HAND_TYPE_2 + pair[0] * 10000 + pair[1];
+    }
+
+    // 单排得分
+    if (arr[0].point == CARD_POINT_A) {
+        return HAND_TYPE_1 + 14 * 10000 + arr[2].point * 100 + arr[1].point;
+    }
+
+    return HAND_TYPE_1 + arr[2].point * 10000 + arr[1].point * 100 + arr[0].point;
+
+    /**
+     * test case:
+     *  c1 = {point : 1, type : 1};
+     *  c2 = {point : 13, type : 2};
+     *  c3 = {point : 12, type : 1};
+     *  calc_score(c1, c2, c3);
+     */
 }
 
 
@@ -225,9 +308,10 @@ class Table {
                 continue;
             }
 
-            v.dat.card = idx;
-            v.dat.score = calc_score(this.cards[idx * 3], this.cards[idx * 3 + 1], this.cards[idx * 3 + 2]);
+            let seq = idx * 3;
 
+            v.dat.card = idx;
+            v.dat.score = calc_score(this.cards[seq], this.cards[seq + 1], this.cards[seq + 2]);
             idx++;
         }
 
