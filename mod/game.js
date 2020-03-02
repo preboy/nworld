@@ -398,9 +398,15 @@ class Table {
         // this.host = 1;
     }
 
-    onMessage(msg) {
+    onMessage(plr, msg) {
         // TODO
         switch (msg.op) {
+            case 'join':
+                break;
+
+            case 'leave':
+                break;
+
             case 'sign':        // 报名
                 // todo this.bout_total_money++;
                 break;
@@ -424,7 +430,6 @@ class Table {
                 console.info(`未处理得消息: ${msg.op}`);
         }
     }
-
 }
 
 
@@ -449,4 +454,8 @@ exports.Stop = () => {
 }
 
 exports.Save = () => {
+}
+
+exports.onMessage = function (ws, msg) {
+    tab.onMessage(ws.plr, msg);
 }

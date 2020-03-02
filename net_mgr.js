@@ -14,12 +14,24 @@ function wss_start() {
 
     wss.on('connection', function (ws) {
         ws.on('message', function (message) {
+            let msg;
+
             try {
-                let msg = JSON.parse(message);
+                msg = JSON.parse(message);
+            } catch (err) {
+                console.error('JSON.parse:', message, err);
+            }
+
+            try {
                 gHandlerDispatcher.OnRecvWsPacket(ws, msg);
             } catch (err) {
-                console.error(`JSON.parse: ${err}`);
+                console.error('OnRecvWsPacket error:', msg, err);
             }
+        });
+
+        ws.on('close', function (code, reason) {
+            ws.plr.offline();
+            console.log(`wss_show websocket closed:  ${code}, ${reason}`);
         });
     });
 }

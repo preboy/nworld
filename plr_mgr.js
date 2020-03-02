@@ -49,6 +49,7 @@ function initial_plr_data() {
 
 class Player {
     constructor(pid, data) {
+        this.ws = null;
         this.pid = pid;     // 玩家账号
         this.data = data;   // 玩家数据
         this.dirty = 0;     // 数据变脏的时间
@@ -98,8 +99,30 @@ class Player {
         this.SendStr(JSON.stringify(msg));
     }
 
-    SendStr(txt) {
-        // TODO
+    SendStr(str) {
+        this.ws.send(str);
+    }
+
+    online(ws) {
+        this.ws = ws;
+        ws.plr = this;
+
+        // 发送玩家基本信息到客户端
+        this.SendMsg({
+            op: 'plr_data',
+            data: this.data,
+        });
+    }
+
+    offline() {
+        this.save();
+
+        this.ws.plr = null;
+        this.ws = null;
+    }
+
+    isOnline() {
+        return this.ws != null;
     }
 }
 
