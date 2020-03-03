@@ -6,6 +6,8 @@ g_load_module('core', 'tcp_mgr');
 // wss listener
 
 let wss;
+let wss_cnt = 0;
+
 function wss_start() {
     wss = new WebSocket.Server({
         port: gDeploy.wss_port,
@@ -14,7 +16,9 @@ function wss_start() {
 
     wss.on('connection', function (ws) {
         ws.on('message', function (message) {
+
             let msg;
+            wss_cnt++;
 
             try {
                 msg = JSON.parse(message);
@@ -31,9 +35,14 @@ function wss_start() {
 
         ws.on('close', function (code, reason) {
             ws.plr.offline();
+            wss_cnt--;
             console.log(`wss_show websocket closed:  ${code}, ${reason}`);
         });
     });
+
+    this.tid = setInterval(() => {
+        console.log(`[${new Date().toISOString()}] total %d wss connections !`, wss_cnt);
+    }, 30 * 1000);
 }
 
 function wss_stop() {
@@ -54,7 +63,7 @@ function tcp_start() {
     mgr.OnRecvPacket((sess, code, body, packet) => {
         gHandlerDispatcher.OnRecvTcpPacket(sess, code, body);
 
-        // just for test
+        // TODO: just for test
         sess.Send(packet);
     });
 

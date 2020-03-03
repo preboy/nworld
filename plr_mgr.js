@@ -64,7 +64,7 @@ class Player {
     }
 
     GetData() {
-        return this.Data.Play;
+        return this.data.Play;
     }
 
     save(force = false) {
@@ -100,7 +100,9 @@ class Player {
     }
 
     SendStr(str) {
-        this.ws.send(str);
+        if (this.ws) {
+            this.ws.send(str);
+        }
     }
 
     online(ws) {
@@ -123,6 +125,33 @@ class Player {
 
     isOnline() {
         return this.ws != null;
+    }
+
+    AddCoin(cnt) {
+        if (cnt < 0) {
+            return false;
+        }
+
+        this.data.Coin += cnt;
+        return true;
+    }
+
+    SubCoin(cnt) {
+        if (cnt < 0) {
+            return false;
+        }
+
+        this.data.Coin -= cnt;
+
+        if (this.data.Coin < 0) {
+            this.data.Coin = 0;
+        }
+
+        return true;
+    }
+
+    EnoughCoin(cnt) {
+        return this.data.Coin >= cnt;
     }
 }
 

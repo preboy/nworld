@@ -6,7 +6,9 @@ exports.release = () => {
     console.log('global: release');
 }
 
-global.print = console.log
+global.print = (...args) => {
+    console.log(`[${new Date().toISOString()}]`, ...args);
+}
 
 // 获取当前的秒
 global.now = () => {

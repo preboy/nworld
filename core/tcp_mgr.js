@@ -18,7 +18,7 @@ class Manager {
 
     Start() {
         this.tid = setInterval(() => {
-            console.warn("total %d connections, %d packets per second !", this.cnt, this.prev_count);
+            // console.warn("total %d connections, %d packets per second !", this.cnt, this.prev_count);
         }, 5 * 1000);
     }
 

@@ -43,6 +43,8 @@ const HAND_TYPE_3 = 3000000;  // 顺子
 const HAND_TYPE_2 = 2000000;  // 对子
 const HAND_TYPE_1 = 1000000;  // 单
 
+const BOUT_FEE = 200;   // 每一局的底金
+
 class Card {
     constructor(type, point) {
         this.type = type;
@@ -52,12 +54,12 @@ class Card {
 
 // 玩法数据
 let playing = JSON.stringify({
-    card: 0,            // 一组牌(3张)的索引
-    join: false,        // 是否参加
-    look: false,        // 是否看牌
-    show: false,        // 是否想打架展示我的牌
-    abandon: false,     // 是否弃牌
+    index: 0,           // 一组牌(3张)的索引
     score: 0,           // 牌面得分
+    look: false,        // 是否看牌
+    show: false,        // 是否向大家展示我的牌
+    game: false,        // 是否准备好(刚加入的玩家，下一局才能准备好)
+    abandon: false,     // 是否弃牌
 });
 
 // 计算一副牌的分值，用于比较谁的牌大
@@ -150,6 +152,7 @@ function calc_score(c1, c2, c3) {
 
 
 class Table {
+
     constructor() {
         this.cnt_plrs = 0;      // 进入到本桌的玩家数
         this.all_plrs = {};     // 进入到本桌的玩家   pid -> plr
@@ -162,8 +165,8 @@ class Table {
             };
         }
 
-        this.host = 1;          // 庄(上一局胜者)
-        this.stage_time = 0;    // 阶段开始时间
+        this.host = 1;              // 庄(上一局胜者)
+        this.stage_time = now();    // 阶段开始时间
 
         this.bout_init();
         this.bout_stage = STAGE_CALC;       // 本局阶段(STAGE_XXX)
@@ -176,6 +179,9 @@ class Table {
             }
         }
     }
+
+    // ------------------------------------------------------------------------
+    // schedule
 
     next_stage() {
         if (this.bout_stage == STAGE_SIGN) {
@@ -221,46 +227,11 @@ class Table {
         }
     }
 
-    join(plr) {
-        let pid = plr.pid;
-
-        // 已经存在
-        if (this.all_plrs[pid]) {
-            return false;
-        }
-
-        // 是否有空位
-        let pos = this.find_empty_seat();
-        if (pos == 0) {
-            return false;
-        }
-
-        this.cnt_plrs++;
-        this.all_plrs[pid] = plr;
-        this.seats[pos].pid = pid;
-
-        return true;
-    }
-
-    leave(plr) {
-        let pid = plr.pid;
-        let pos = find_player_seat(pid);
-        if (pos) {
-            this.seats[pos] = { pid: 0, dat: JSON.parse(playing), };
-        }
-
-        this.cnt_plrs--;
-        delete this.all_plrs[pid];
-    }
-
-    // ------------------------------------------------------------------------
-    // stage event
-
     enter_stage_sign() {
         // 清理数据
         this.bout_init();
 
-        for (let i = 0; i < MAX_SEATS_CNT; i++) {
+        for (let i = 1; i < MAX_SEATS_CNT; i++) {
             this.seats[i].dat = JSON.parse(playing);
         }
 
@@ -276,11 +247,19 @@ class Table {
         let next = false;
 
         do {
-            if (this.bout_sign_cnt < 2) {
+            let cnt = 0;
+            for (let i = 1; i < MAX_SEATS_CNT; i++) {
+                let plr = this.get_plr(i);
+                if (plr && plr.EnoughCoin(BOUT_FEE)) {
+                    cnt++;
+                }
+            }
+
+            if (cnt < 2) {
                 break;
             }
 
-            if (this.bout_sign_cnt == this.cnt_plrs) {
+            if (cnt == MAX_SEATS_CNT - 1) {
                 next = true;
                 break;
             }
@@ -304,13 +283,22 @@ class Table {
         let idx = 0;
         for (let i = 1; i < MAX_SEATS_CNT; i++) {
             let v = this.seats[i];
-            if (!v.pid || !v.dat.join) {
+            if (v.pid == 0) {
                 continue;
             }
 
+            let plr = this.get_plr(i);
+            if (!plr) {
+                continue;
+            }
+
+            plr.SubCoin(BOUT_FEE);
+            this.bout_total_money += BOUT_FEE;
+
             let seq = idx * 3;
 
-            v.dat.card = idx;
+            v.dat.game = true;
+            v.dat.index = idx;
             v.dat.score = calc_score(this.cards[seq], this.cards[seq + 1], this.cards[seq + 2]);
             idx++;
         }
@@ -335,13 +323,7 @@ class Table {
     }
 
     update_stage_calc() {
-        // 是否自动开启下一局
         if (now() - this.stage_time < STAGE_LAST[STAGE_CALC]) {
-            return;
-        }
-
-        // 人数是否满足
-        if (this.cnt_plrs < 2) {
             return;
         }
 
@@ -349,6 +331,71 @@ class Table {
     }
 
     leave_stage_calc() {
+        // 钱不够的玩家，踢掉
+        for (let i = 1; i < MAX_SEATS_CNT; i++) {
+            let plr = this.get_plr(i);
+            if (plr && !plr.EnoughCoin(BOUT_FEE)) {
+                this.kick(plr);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // dispatch
+
+    onMessage(plr, msg) {
+
+        let res = {
+            op: msg.op,
+            ret: 1,
+            msg: 'failed',
+        };
+
+        switch (msg.op) {
+            // 加入/离开
+            case 'join':
+                this.join(plr);
+                break;
+
+            case 'leave':
+                this.leave(plr);
+                break;
+
+            // 玩法操作
+            case 'look':        // 看牌
+                if (!this.plr_in_bout(plr)) {
+                    res.msg = 'not in bout';
+                    return;
+                }
+                break;
+
+            case 'show':        // 公示自己的牌
+                break;
+
+            case 'recharge':    // 加码
+                break;
+
+            case 'abandon':     // 弃牌
+                break;
+
+            case 'open':        // 开牌
+                break;
+
+            default:
+                console.info(`未处理的消息: ${msg.op}`);
+        }
+
+        plr.SendMsg(res);
+    }
+
+    // ------------------------------------------------------------------------
+    // aux
+
+    bout_init() {
+        this.bout_turn = 0;                 // 下一个该出牌的人
+        this.bout_meng = 0;                 // 蒙打(未看牌)
+        this.bout_ming = 0;                 // 名打
+        this.bout_total_money = 0;          // 总金额
     }
 
     broadcast(msg) {
@@ -358,15 +405,43 @@ class Table {
         }
     }
 
-    // ------------------------------------------------------------------------
-    // game event
+    join(plr) {
+        let pid = plr.pid;
 
-    bout_init() {
-        this.bout_turn = 0;                 // 下一个该出牌的人
-        this.bout_meng = 0;                 // 蒙打(为看牌)
-        this.bout_ming = 0;                 // 名打
-        this.bout_sign_cnt = 0;             // 本轮报名的人数
-        this.bout_total_money = 0;          // 总金额
+        // 已经存在
+        if (this.all_plrs[pid]) {
+            return true;
+        }
+
+        // 是否有空位
+        let pos = this.find_empty_seat();
+        if (pos == 0) {
+            return false;
+        }
+
+        // 底金是否足够
+        if (!plr.EnoughCoin(BOUT_FEE)) {
+            return false;
+        }
+
+        this.cnt_plrs++;
+        this.all_plrs[pid] = plr;
+        this.seats[pos].pid = pid;
+
+        return true;
+    }
+
+    leave(plr) {
+        let pid = plr.pid;
+        let pos = find_player_seat(pid);
+        if (pos) {
+            this.seats[pos] = { pid: 0, dat: JSON.parse(playing), };
+        } else {
+            return;
+        }
+
+        this.cnt_plrs--;
+        delete this.all_plrs[pid];
     }
 
     find_empty_seat() {
@@ -398,37 +473,25 @@ class Table {
         // this.host = 1;
     }
 
-    onMessage(plr, msg) {
-        // TODO
-        switch (msg.op) {
-            case 'join':
-                break;
-
-            case 'leave':
-                break;
-
-            case 'sign':        // 报名
-                // todo this.bout_total_money++;
-                break;
-
-            case 'look':        // 看牌
-                break;
-
-            case 'show':        // 公示自己得牌
-                break;
-
-            case 'recharge':    // 加码
-                break;
-
-            case 'abandon':     // 弃牌
-                break;
-
-            case 'open':        // 开牌
-                break;
-
-            default:
-                console.info(`未处理得消息: ${msg.op}`);
+    get_plr(pos) {
+        let pid = this.seats[pos].pid;
+        if (pid) {
+            return this.all_plrs[pid];
         }
+    }
+
+    kick(plr) {
+        this.leave(plr);
+    }
+
+    // 玩家是否再赌博中
+    plr_in_bout(plr) {
+        let pos = this.find_player_seat(plr.pid);
+        if (pos) {
+            return this.seats[pos].dat.game;
+        }
+
+        return false;
     }
 }
 
