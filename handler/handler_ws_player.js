@@ -38,9 +38,14 @@ let handlers = {
     },
 
 
-    // 消息2
-    fuckyou: def_handler,
-
+    // 游戏内消息
+    join: def_handler,
+    leave: def_handler,
+    look: def_handler,
+    show: def_handler,
+    recharge: def_handler,
+    abandon: def_handler,
+    open: def_handler,
 }
 
 

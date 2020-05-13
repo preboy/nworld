@@ -16,7 +16,7 @@ exports.hsvc_port = 32000 + gameId;
 exports.redis = {
     db: 2,
     port: 6379,
-    host: '127.0.0.1',
+    host: '192.168.0.198',
     password: '123456',
 };
 

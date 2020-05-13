@@ -109,7 +109,7 @@ function ProcessExit() {
     stoping = true;
     on_stop();
 
-    let i = 4;
+    let i = 3;
     setInterval(() => {
         i--;
         if (i == 0) {

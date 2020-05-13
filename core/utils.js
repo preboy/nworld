@@ -1,3 +1,5 @@
+let crypto = require('crypto');
+
 // 返回随机整数[min, max)
 function RandIntRange(min, max) {
 	return Math.floor(Math.random() * (max - min) + min);
@@ -35,6 +37,21 @@ function Shuffle(arr) {
 	}
 }
 
+function Md5(str) {
+	let md5 = crypto.createHash('md5');
+	md5.update(str);
+	return md5.digest('hex');
+}
+
+function ToBase64(str) {
+	return Buffer.from(str).toString('base64');
+}
+
+function FromBase64(str) {
+	return Buffer.from(str, 'base64').toString();
+}
+
+
 // ----------------------------------------------------------------------------
 
 module.exports = {
@@ -44,4 +61,8 @@ module.exports = {
 	Shuffle,
 
 	NewPacket,
+
+	Md5,
+	ToBase64,
+	FromBase64,
 }

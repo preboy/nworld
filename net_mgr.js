@@ -34,7 +34,10 @@ function wss_start() {
         });
 
         ws.on('close', function (code, reason) {
-            ws.plr.offline();
+            if (ws.plr) {
+                ws.plr.offline();
+            }
+
             wss_cnt--;
             console.log(`wss_show websocket closed:  ${code}, ${reason}`);
         });
