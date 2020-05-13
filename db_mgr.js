@@ -3,16 +3,22 @@ const redis = require("redis");
 // ----------------------------------------------------------------------------
 let ready = false;
 let client;
+let running;
 
 function start(cb) {
     client = redis.createClient(gDeploy.redis);
 
     client.on('error', (err) => {
+        ready = false;
+        if (!running) {
+            client.quit();
+            return;
+        }
         console.warn('redis error:', err);
     });
 
     client.on('connect', () => {
-        console.info('redis connect ok');
+        console.info('redis connect');
         ready = true;
         cb();
     });
@@ -23,7 +29,7 @@ function start(cb) {
 
     client.on('end', () => {
         ready = false;
-        delete client;
+        console.log("redis end");
     });
 }
 
@@ -38,10 +44,12 @@ function stop() {
 // exports
 
 exports.Start = function (cb) {
+    running = true;
     start(cb);
 }
 
 exports.Stop = function () {
+    running = false;
     stop();
 }
 

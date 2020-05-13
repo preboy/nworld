@@ -72,11 +72,15 @@ function tcp_start() {
 }
 
 function tcp_stop() {
-    svr.Stop();
-    mgr.Stop();
+    if (svr) {
+        svr.Stop();
+        svr = null;
+    }
 
-    mgr = null;
-    svr = null;
+    if (mgr) {
+        mgr.Stop();
+        mgr = null;
+    }
 }
 
 // ----------------------------------------------------------------------------
