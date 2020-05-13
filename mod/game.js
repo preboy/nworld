@@ -1,21 +1,16 @@
-// 房间类型：   表格配置
+// ----------------------------------------------------------------------------
+// const
 
-const STAGE_SIGN = 0;   // 报名阶段
-const STAGE_GAME = 1;   // 玩法阶段
-const STAGE_CALC = 2;   // 结算阶段
+const STAGE_WAITING = 1;    // 等待玩家阶段
+const STAGE_RUNNING = 2;    // 游戏阶段
 
-const STAGE_LAST = [
-    20,     // 报名阶段最长时间
-    300,    // 玩法阶段最长时间
-    20,     // 结算阶段最长时间
-];
-
-const MAX_SEATS_CNT = 18;   // 最大座位数，注：第一个位置不坐人
+const MAX_SEATS_CNT = 17;   // 最大座位数
 
 const MAX_MONEY = 100;      // 单手最大出钱数
+const BOUT_FEE = 200;   // 每一局的底金
 
 // 牌的花型
-const CARD_TYPE_CLUB = 1;       // 梅花
+const CARD_TYPE_CLUBS = 1;      // 梅花
 const CARD_TYPE_HEARTS = 2;     // 红桃
 const CARD_TYPE_SPADES = 3;     // 黑桃
 const CARD_TYPE_DIAMONDS = 4;   // 方块
@@ -43,7 +38,10 @@ const HAND_TYPE_3 = 3000000;  // 顺子
 const HAND_TYPE_2 = 2000000;  // 对子
 const HAND_TYPE_1 = 1000000;  // 单
 
-const BOUT_FEE = 200;   // 每一局的底金
+
+
+// ----------------------------------------------------------------------------
+// Card
 
 class Card {
     constructor(type, point) {
@@ -58,16 +56,6 @@ class Card {
         }
     }
 }
-
-// 玩法数据
-let playing = JSON.stringify({
-    index: 0,           // 一组牌(3张)的索引
-    score: 0,           // 牌面得分
-    look: false,        // 是否看牌
-    show: false,        // 是否向大家展示我的牌
-    game: false,        // 是否准备好(刚加入的玩家，下一局才能准备好)
-    abandon: false,     // 是否弃牌
-});
 
 // 计算一副牌的分值，用于比较谁的牌大
 function calc_score(c1, c2, c3) {
@@ -157,31 +145,60 @@ function calc_score(c1, c2, c3) {
      */
 }
 
+// ----------------------------------------------------------------------------
+// Seat
 
-// 一桌游戏
+class Seat {
+    constructor(pos) {
+        this.pos = pos;           // 位置
+        this.pid = 0;             // 玩家ID，默认为0
+        this.robot = true;        // 是否机器人(每一局开始时根据pid重置)
+        this.index = 0;           // 一组牌(3张)的索引
+        this.score = 0;           // 牌面得分
+        this.look = false;        // 本局是否看牌
+        this.quit = false;        // 本局是否退出
+        this.banlance = 0;        // 本局当前余额
+    }
+
+    reset() {
+        if (this.pid) {
+            this.robot = true;
+        } else {
+            this.robot = false;
+        }
+
+        this.index = 0;
+        this.score = 0;
+        this.look = false;
+        this.quit = false;
+        this.banlance = 0;
+    }
+
+}
+
+// ----------------------------------------------------------------------------
+// Table 一桌游戏
+
 class Table {
 
     constructor() {
-        this.cnt_plrs = 0;      // 进入到本桌的玩家数
-        this.all_plrs = {};     // 进入到本桌的玩家   pid -> plr
+        this.plrs = {};     // 进入到本桌的玩家   pid -> plr
 
-        this.seats = [];        // 桌子上作的一圈玩家 [pid,...]，注意：0号位置不使用,0表示无玩家
+        this.seats = Array(MAX_SEATS_CNT);  // 桌子上作的一圈玩家 [pid,...]，注意：0表示无玩家(即为robot)
         for (let i = 0; i < MAX_SEATS_CNT; i++) {
-            this.seats[i] = {
-                pid: 0,
-                dat: JSON.parse(playing),
-            };
+            this.seats[i] = new Seat(i);
         }
 
-        this.host = 1;              // 庄(上一局胜者)
+        this.host = 0;              // 庄(每一局开始产生随机值)
+        this.stage_data = {};       // 阶段数据
         this.stage_time = now();    // 阶段开始时间
 
-        this.bout_init();
-        this.bout_stage = STAGE_CALC;       // 本局阶段(STAGE_XXX)
+        this.bout_stage = STAGE_WAITING;
+        this.enter_stage_waiting();
 
         // 扑克牌
-        this.cards = [];
-        for (let i = CARD_TYPE_CLUB; i <= CARD_TYPE_DIAMONDS; i++) {
+        this.cards = Array(CARD_TYPE_DIAMONDS * CARD_POINT_K);
+        for (let i = CARD_TYPE_CLUBS; i <= CARD_TYPE_DIAMONDS; i++) {
             for (let j = CARD_POINT_A; j <= CARD_POINT_K; j++) {
                 this.cards.push(new Card(i, j));
             }
@@ -191,102 +208,67 @@ class Table {
     // ------------------------------------------------------------------------
     // schedule
 
-    next_stage() {
-        if (this.bout_stage == STAGE_SIGN) {
-            this.leave_stage_sign();
-        }
-        if (this.bout_stage == STAGE_GAME) {
-            this.leave_stage_game();
-        }
-        if (this.bout_stage == STAGE_CALC) {
-            this.leave_stage_calc();
+    switch_stage() {
+        if (this.bout_stage == STAGE_WAITING) {
+            this.leave_stage_waiting();
+            this.bout_stage = STAGE_RUNNING;
+            this.stage_time = now();
+            this.enter_stage_running();
         }
 
-        this.bout_stage++;
-        this.stage_time = now();
-
-        if (this.bout_stage > STAGE_CALC) {
-            this.bout_stage = STAGE_SIGN;
-        }
-
-        if (this.bout_stage == STAGE_SIGN) {
-            this.enter_stage_sign();
-        }
-        if (this.bout_stage == STAGE_GAME) {
-            this.enter_stage_game();
-        }
-        if (this.bout_stage == STAGE_CALC) {
-            this.enter_stage_calc();
+        if (this.bout_stage == STAGE_RUNNING) {
+            this.leave_stage_running();
+            this.bout_stage = STAGE_WAITING;
+            this.stage_time = now();
+            this.enter_stage_waiting();
         }
     }
 
     update() {
-        // stage update
-        if (this.bout_stage == STAGE_SIGN) {
-            this.update_stage_sign();
+        if (this.bout_stage == STAGE_WAITING) {
+            this.update_stage_waiting();
         }
 
-        if (this.bout_stage == STAGE_GAME) {
-            this.update_stage_game();
-        }
-
-        if (this.bout_stage == STAGE_CALC) {
-            this.update_stage_calc();
+        if (this.bout_stage == STAGE_RUNNING) {
+            this.update_stage_running();
         }
     }
 
-    enter_stage_sign() {
-        // 清理数据
-        this.bout_init();
+    enter_stage_waiting() {
+        // 新的一局开始了
+        this.stage_data = {
+            ts: 0,
+        };
+    }
 
-        for (let i = 1; i < MAX_SEATS_CNT; i++) {
-            this.seats[i].dat = JSON.parse(playing);
+    update_stage_waiting() {
+        // 检测是否有玩家(金钱足够)，如果至少有1个玩家则开始计时5秒，时间到了进入下一个阶段
+        let able = this.runnable();
+
+        if (this.stage_data.ts) {
+            let n = now();
+            if (n - this.stage_data.ts >= 5) {
+                if (able) {
+                    this.switch_stage();
+                } else {
+                    this.stage_data.ts = 0;
+                }
+            }
+        } else {
+            if (able) {
+                this.stage_data.ts = now();
+            }
         }
+    }
 
+    leave_stage_waiting() {
         // 洗牌，听说洗7次之后，就完全没有规律了
         for (let i = 0; i < 7; i++) {
             gCoreUtils.Shuffle(this.cards);
         }
-
-        // TODO 通知大家可以报名了
     }
 
-    update_stage_sign() {
-        let next = false;
-
-        do {
-            let cnt = 0;
-            for (let i = 1; i < MAX_SEATS_CNT; i++) {
-                let plr = this.get_plr(i);
-                if (plr && plr.EnoughCoin(BOUT_FEE)) {
-                    cnt++;
-                }
-            }
-
-            if (cnt < 2) {
-                break;
-            }
-
-            if (cnt == MAX_SEATS_CNT - 1) {
-                next = true;
-                break;
-            }
-
-            if (now() - this.stage_time > STAGE_LAST[STAGE_SIGN]) {
-                next = true;
-                break;
-            }
-        } while (false);
-
-        if (next) {
-            this.next_stage();
-        }
-    }
-
-    leave_stage_sign() {
-    }
-
-    enter_stage_game() {
+    enter_stage_running() {
         // 发牌
         let idx = 0;
         for (let i = 1; i < MAX_SEATS_CNT; i++) {
@@ -321,35 +303,13 @@ class Table {
         // TODO 通知大家，牌发好了
     }
 
-    update_stage_game() {
+    update_stage_running() {
         // TODO 提醒出牌
 
         // 大家都放弃了，最后就是胜利这
     }
 
-    leave_stage_game() {
-    }
-
-    enter_stage_calc() {
-        // TODO结算 通知所有人，谁赢了多少
-    }
-
-    update_stage_calc() {
-        if (now() - this.stage_time < STAGE_LAST[STAGE_CALC]) {
-            return;
-        }
-
-        this.next_stage();
-    }
-
-    leave_stage_calc() {
-        // 钱不够的玩家，踢掉
-        for (let i = 1; i < MAX_SEATS_CNT; i++) {
-            let plr = this.get_plr(i);
-            if (plr && !plr.EnoughCoin(BOUT_FEE)) {
-                this.kick(plr);
-            }
-        }
+    leave_stage_running() {
     }
 
     // ------------------------------------------------------------------------
@@ -652,10 +612,8 @@ class Table {
     // aux
 
     bout_init() {
-        this.bout_turn = 0;                 // 下一个该出牌的人
-        this.bout_meng = 0;                 // 蒙打(未看牌)
-        this.bout_ming = 0;                 // 名打
-        this.bout_total_money = 0;          // 总金额
+        this.bout_turn = ;             // 下一个该出牌的人
+        this.bout_total_balance = 0;    // 总金额
     }
 
     broadcast(msg, delay) {
@@ -686,6 +644,17 @@ class Table {
         delete this.all_plrs[pid];
 
         return true;
+    }
+
+    // 是否可进入 STAGE_RUNNING 阶段
+    runnable() {
+        for (let i = 0; i < MAX_SEATS_CNT; i++) {
+            let plr = this.get_plr(i);
+            if (plr && plr.EnoughCoin(BOUT_FEE)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     find_empty_seat() {
@@ -720,7 +689,7 @@ class Table {
     get_plr(pos) {
         let pid = this.seats[pos].pid;
         if (pid) {
-            return this.all_plrs[pid];
+            return this.plrs[pid];
         }
     }
 
