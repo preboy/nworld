@@ -6,8 +6,7 @@ const STAGE_RUNNING = 2;    // 游戏阶段
 
 const MAX_SEATS_CNT = 17;   // 最大座位数
 
-const MAX_MONEY = 100;      // 单手最大出钱数
-const BOUT_FEE = 200;       // 每一局的底金
+const BOUT_FEE = 100;       // 每一局的底金
 
 const MAX_THINKING_TIME = 10;       // 出牌者最长思考时间
 
@@ -159,6 +158,7 @@ class Seat {
         this.score = 0;             // 牌面得分
         this.look = false;          // 本局是否看牌
         this.quit = false;          // 本局是否退出
+        this.value = 1;             // 价值系数
         this.balance = 0;           // 本局当前余额
         this.winner = null;         // 击败我的人
     }
@@ -194,7 +194,24 @@ class Seat {
     }
 
     toMsg() {
+        let obj = {
+            pos: this.pos,
+            pid: this.pid,
+            robot: this.robot,
+            look: this.look,
+            quit: this.quit,
+            value: this.value,
+            balance: this.balance,
+            winner: this.winner,
+        }
 
+        if (this.pid) {
+            obj.name = this.plrs[this.pid].GetName();
+        } else {
+            obj.name = "robot:" + this.pos;
+        }
+
+        return ret;
     }
 }
 
@@ -211,9 +228,11 @@ class Table {
             this.seats[i] = new Seat(i);
         }
 
-        this.host = 0;              // 庄(每一局开始产生随机值)
-        this.stage_data = {};       // 阶段数据
-        this.stage_time = Now();    // 阶段开始时间
+        this.host = 0;                  // 庄(每一局开始产生随机值)
+        this.bout_total_balance = 0;    // 底
+
+        this.stage_data = {};           // 阶段数据
+        this.stage_time = Now();        // 阶段开始时间
 
         this.bout_stage = STAGE_WAITING;
         this.enter_stage_waiting();
@@ -253,7 +272,6 @@ class Table {
     }
 
     enter_stage_waiting() {
-        // 新的一局开始了
         this.stage_data = {
             cd: 0,
         };
@@ -286,29 +304,35 @@ class Table {
     }
 
     enter_stage_running() {
+        this.stage_data = {};
         this.bout_total_balance = 0;
 
         for (let i = 0; i < MAX_SEATS_CNT; i++) {
             let seat = this.seats[i];
+            seat.reset();
 
             let plr = this.plrs(seat.pid);
             if (plr) {
-                plr.SubCoin(BOUT_FEE);
+                plr.SubCoin(BOUT_FEE * 2);
+                seat.value = 1;
+            } else {
+                seat.value = gCoreUtils.RandIntRange(1, 4);
             }
 
             this.bout_total_balance += BOUT_FEE;
 
-            let seq = idx * 3;
+            let seq = i * 3;
             seat.index = i;
             seat.score = calc_score(this.cards[seq], this.cards[seq + 1], this.cards[seq + 2]);
+            seat.balance = seat.value * BOUT_FEE;
         }
 
         this.host = gCoreUtils.RandInt(MAX_SEATS_CNT);
 
         // 通知大家，牌发好了
         this.broadcast({
-            op: 'deal',
-            host: this.host,
+            op: 'deal_n',
+            info: get_bout_info(),
         });
 
         let next = this.set_bout_turn(this.host);
@@ -428,6 +452,7 @@ class Table {
 
                     msg.ret = 0;
                     msg.msg = 'ok';
+                    msg.info = this.get_bout_info();
                     break;
                 }
 
@@ -492,8 +517,8 @@ class Table {
                         break;
                     }
 
-                    dat.look = true;
-                    res.cards = this.get_cards(dat.index);
+                    seat.look = true;
+                    res.cards = this.get_cards(seat.index);
 
                     this.broadcast({
                         op: "look_n",
@@ -557,15 +582,26 @@ class Table {
                                 break;
                             }
 
+                            let amount = target_seat.value * BOUT_FEE
+
+                            if (!plr.EnoughCoin(amount)) {
+                                res.msg = 'NOT enough coin';
+                                break;
+                            }
+
                             ntf.target = target_seat.pos;
+
+                            plr.SubCoin(amount);
 
                             // 比大小
                             if (seat.score > target_seat.score) {
                                 seat.balance += target_seat.balance;
+                                seat.balance += amount;
                                 target_seat.killed(pos);
                                 ntf.win = true;
                             } else {
                                 target_seat.balance += seat.balance;
+                                target_seat.balance += amount;
                                 seat.killed(target_seat.pos);
                                 ntf.win = false;
                             }
@@ -595,6 +631,69 @@ class Table {
 
                     res.ret = 0;
                     res.msg = 'ok';
+                    break;
+                }
+
+            case 'value':   // 增加手牌价值
+                {
+                    if (this.bout_stage != STAGE_RUNNING) {
+                        res.msg = 'not in stage running';
+                        break;
+                    }
+
+                    let pos = find_player_seat(pid);
+                    if (pos == null) {
+                        msg.msg = 'not in seat';
+                        break;
+                    }
+
+                    let seat = this.seats[pos];
+
+                    if (seat.robot) {
+                        res.msg = 'robot';
+                        break;
+                    }
+
+                    if (seat.out()) {
+                        res.msg = 'out';
+                        break;
+                    }
+
+                    if (seat.look) {
+                        res.msg = 'looked';
+                        break;
+                    }
+
+                    if (!plr.EnoughCoin(BOUT_FEE)) {
+                        res.msg = 'NOT enough coin';
+                        break;
+                    }
+
+                    seat.value++;
+                    plr.SubCoin(BOUT_FEE);
+
+                    this.broadcast({
+                        op: "value_n",
+                        pos: pos,
+                        value: seat.value,
+                    }, true);
+
+                    res.ret = 0;
+                    res.msg = 'ok';
+                    break;
+                }
+
+            case 'dump':
+                {
+                    console.log("本局信息:");
+                    console.log("balance:", this.balance);
+
+                    for (let i = 0; i < MAX_SEATS_CNT; i++) {
+                        let seat = this.seats[i];
+                        console.log(`第 <${i}> 个位置:`, seat);
+                        console.log("手牌:", seat.get_cards(seat.index));
+                    }
+
                     break;
                 }
 
@@ -663,7 +762,7 @@ class Table {
         this.bout_turn = turn;
         this.bout_time = Now();
         this.broadcast({
-            op: 'turn',
+            op: 'turn_n',
             turn: turn,
         });
     }
@@ -672,7 +771,7 @@ class Table {
     runnable() {
         for (let i = 0; i < MAX_SEATS_CNT; i++) {
             let plr = this.get_plr(i);
-            if (plr && plr.EnoughCoin(BOUT_FEE)) {
+            if (plr && plr.EnoughCoin(BOUT_FEE * 2)) {
                 return true;
             }
         }
@@ -708,15 +807,41 @@ class Table {
 
     get_cards(index) {
         return [
-            this.cards[index + 0].toMsg(),
-            this.cards[index + 1].toMsg(),
-            this.cards[index + 2].toMsg(),
+            this.cards[index * 3 + 0].toMsg(),
+            this.cards[index * 3 + 1].toMsg(),
+            this.cards[index * 3 + 2].toMsg(),
         ];
     }
 
     // 结束本局
     set_bout_over(winner) {
-        // ..
+        let seat = this.seats[winner];
+        if (!seat.robot) {
+            let plr = this.plrs[seat.pid];
+            plr.AddCoin(this.bout_total_balance);
+            this.bout_total_balance = 0;
+        }
+
+        this.broadcast({
+            op: 'bout_result_n',
+            pos: winner,
+        });
+
+        this.switch_stage();
+    }
+
+    get_bout_info() {
+        let info = {
+            host: this.host,
+            seats: Array(MAX_SEATS_CNT),
+            balance: this.bout_total_balance,
+        };
+
+        for (let i = 0; i < MAX_SEATS_CNT; i++) {
+            info.seats.append(this.seats[i].toMsg());
+        }
+
+        return info;
     }
 }
 

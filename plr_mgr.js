@@ -133,6 +133,8 @@ class Player {
         }
 
         this.data.Coin += cnt;
+
+        this.notify_coin();
         return true;
     }
 
@@ -147,11 +149,23 @@ class Player {
             this.data.Coin = 0;
         }
 
+        this.notify_coin();
         return true;
     }
 
     EnoughCoin(cnt) {
         return this.data.Coin >= cnt;
+    }
+
+    notify_coin() {
+        process.nextTick(() => {
+            this.SendMsg({
+                op: "property",
+                Coin: this.data.Coin,
+                Gold: this.data.Gold,
+                Card: this.data.Card,
+            });
+        });
     }
 }
 
