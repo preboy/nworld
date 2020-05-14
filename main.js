@@ -109,13 +109,13 @@ function ProcessExit() {
     stoping = true;
     on_stop();
 
-    let i = 3;
+    let i = 4;
     setInterval(() => {
         i--;
         if (i == 0) {
             process.exit(0);
         }
 
-        console.log(`server will STOP after ${i} sec`.red);
+        console.log(`server will be STOPPED after ${i} sec`.red);
     }, 1000);
 }

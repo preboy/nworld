@@ -11,6 +11,6 @@ global.print = (...args) => {
 }
 
 // 获取当前的秒
-global.now = () => {
+global.Now = () => {
     return Math.floor(+new Date() / 1000);
 };

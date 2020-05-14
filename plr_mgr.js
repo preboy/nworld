@@ -38,7 +38,7 @@ function initial_plr_data() {
         Play: {   // 游戏数据
             rid: 0,    // 当前房间ID
             tid: 0,    // 当前桌子ID
-            pos: 0,    // 当前位置
+            pos: null, // 当前位置
         },
     }
 }
@@ -73,7 +73,7 @@ class Player {
                 return;
             }
 
-            let ts = now();
+            let ts = Now();
             if (ts - this.dirty < 300) {
                 return;
             }

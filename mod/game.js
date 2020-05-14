@@ -7,7 +7,9 @@ const STAGE_RUNNING = 2;    // 游戏阶段
 const MAX_SEATS_CNT = 17;   // 最大座位数
 
 const MAX_MONEY = 100;      // 单手最大出钱数
-const BOUT_FEE = 200;   // 每一局的底金
+const BOUT_FEE = 200;       // 每一局的底金
+
+const MAX_THINKING_TIME = 10;       // 出牌者最长思考时间
 
 // 牌的花型
 const CARD_TYPE_CLUBS = 1;      // 梅花
@@ -150,14 +152,15 @@ function calc_score(c1, c2, c3) {
 
 class Seat {
     constructor(pos) {
-        this.pos = pos;           // 位置
-        this.pid = 0;             // 玩家ID，默认为0
-        this.robot = true;        // 是否机器人(每一局开始时根据pid重置)
-        this.index = 0;           // 一组牌(3张)的索引
-        this.score = 0;           // 牌面得分
-        this.look = false;        // 本局是否看牌
-        this.quit = false;        // 本局是否退出
-        this.banlance = 0;        // 本局当前余额
+        this.pos = pos;             // 位置
+        this.pid = 0;               // 玩家ID，默认为0
+        this.robot = true;          // 是否机器人(每一局开始时根据pid重置)
+        this.index = 0;             // 一组牌(3张)的索引
+        this.score = 0;             // 牌面得分
+        this.look = false;          // 本局是否看牌
+        this.quit = false;          // 本局是否退出
+        this.balance = 0;           // 本局当前余额
+        this.winner = null;         // 击败我的人
     }
 
     reset() {
@@ -171,9 +174,28 @@ class Seat {
         this.score = 0;
         this.look = false;
         this.quit = false;
-        this.banlance = 0;
+        this.balance = 0;
+        this.winner = null;
     }
 
+    killed(killer) {
+        this.balance = 0;
+        this.winner = killer;
+    }
+
+    out() {
+        if (this.quit)
+            return true;
+
+        if (this.winner != null)
+            return true;
+
+        return false;
+    }
+
+    toMsg() {
+
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -191,7 +213,7 @@ class Table {
 
         this.host = 0;              // 庄(每一局开始产生随机值)
         this.stage_data = {};       // 阶段数据
-        this.stage_time = now();    // 阶段开始时间
+        this.stage_time = Now();    // 阶段开始时间
 
         this.bout_stage = STAGE_WAITING;
         this.enter_stage_waiting();
@@ -212,14 +234,12 @@ class Table {
         if (this.bout_stage == STAGE_WAITING) {
             this.leave_stage_waiting();
             this.bout_stage = STAGE_RUNNING;
-            this.stage_time = now();
+            this.stage_time = Now();
             this.enter_stage_running();
-        }
-
-        if (this.bout_stage == STAGE_RUNNING) {
+        } else {
             this.leave_stage_running();
             this.bout_stage = STAGE_WAITING;
-            this.stage_time = now();
+            this.stage_time = Now();
             this.enter_stage_waiting();
         }
     }
@@ -227,9 +247,7 @@ class Table {
     update() {
         if (this.bout_stage == STAGE_WAITING) {
             this.update_stage_waiting();
-        }
-
-        if (this.bout_stage == STAGE_RUNNING) {
+        } else {
             this.update_stage_running();
         }
     }
@@ -237,7 +255,7 @@ class Table {
     enter_stage_waiting() {
         // 新的一局开始了
         this.stage_data = {
-            ts: 0,
+            cd: 0,
         };
     }
 
@@ -245,18 +263,17 @@ class Table {
         // 检测是否有玩家(金钱足够)，如果至少有1个玩家则开始计时5秒，时间到了进入下一个阶段
         let able = this.runnable();
 
-        if (this.stage_data.ts) {
-            let n = now();
-            if (n - this.stage_data.ts >= 5) {
+        if (this.stage_data.cd) {
+            this.stage_data.cd--;
+
+            if (this.stage_data.cd == 0) {
                 if (able) {
                     this.switch_stage();
-                } else {
-                    this.stage_data.ts = 0;
                 }
             }
         } else {
             if (able) {
-                this.stage_data.ts = now();
+                this.stage_data.cd = 5;
             }
         }
     }
@@ -269,44 +286,102 @@ class Table {
     }
 
     enter_stage_running() {
-        // 发牌
-        let idx = 0;
-        for (let i = 1; i < MAX_SEATS_CNT; i++) {
-            let v = this.seats[i];
-            if (v.pid == 0) {
-                continue;
+        this.bout_total_balance = 0;
+
+        for (let i = 0; i < MAX_SEATS_CNT; i++) {
+            let seat = this.seats[i];
+
+            let plr = this.plrs(seat.pid);
+            if (plr) {
+                plr.SubCoin(BOUT_FEE);
             }
 
-            let plr = this.get_plr(i);
-            if (!plr) {
-                continue;
-            }
-
-            plr.SubCoin(BOUT_FEE);
-            this.bout_total_money += BOUT_FEE;
+            this.bout_total_balance += BOUT_FEE;
 
             let seq = idx * 3;
-
-            v.dat.game = true;
-            v.dat.index = idx;
-            v.dat.score = calc_score(this.cards[seq], this.cards[seq + 1], this.cards[seq + 2]);
-            idx++;
+            seat.index = i;
+            seat.score = calc_score(this.cards[seq], this.cards[seq + 1], this.cards[seq + 2]);
         }
 
+        this.host = gCoreUtils.RandInt(MAX_SEATS_CNT);
+
+        // 通知大家，牌发好了
         this.broadcast({
             op: 'deal',
+            host: this.host,
         });
 
-        this.set_host();
-        this.bout_turn = this.host;
-
-        // TODO 通知大家，牌发好了
+        let next = this.set_bout_turn(this.host);
+        assert(next, "没有找到下一个出牌者");
     }
 
     update_stage_running() {
-        // TODO 提醒出牌
+        let seat = this.seats[this.bout_turn];
 
-        // 大家都放弃了，最后就是胜利这
+        if (seat.robot) {
+            let pos = this.find_bout_next();
+            if (pos == this.bout_turn) {
+                // 胜利: 我是最后一个机器人
+                this.set_bout_over(pos);
+                return;
+            } else {
+                this.set_bout_turn(pos);
+            }
+        } else {
+            // 是否超时
+            let now = Now();
+            if (now - this.bout_time > MAX_THINKING_TIME) {
+                let pos = this.find_bout_next();
+                if (pos == this.bout_turn) {
+                    // 胜利: 我是最后一玩家
+                    this.set_bout_over(pos);
+                    return;
+                } else {
+                    this.set_bout_turn(pos);
+                }
+            }
+        }
+
+        // 是否结束本局(所有玩家被KO)
+        {
+            let left_player = false;
+            for (let i = 0; i < MAX_SEATS_CNT; i++) {
+                let seat = this.seats[i];
+                if (seat.robot || seat.out()) {
+                    continue;
+                }
+
+                left_player = true;
+                break;
+            }
+
+            if (!left_player) {
+                this.set_bout_over(null);
+                return;
+            }
+        }
+
+        // 是否结束本局(只剩唯一的活口了)
+        {
+            let pos;
+            let cnt = 0;
+            for (let i = 0; i < MAX_SEATS_CNT; i++) {
+                let seat = this.seats[i];
+                if (seat.quit) {
+                    continue;
+                }
+
+                cnt++;
+                pos = i;
+                if (cnt > 1) {
+                    return;
+                }
+            }
+
+            // assert(cnt == 1, "所有人都放弃了本局");
+            this.set_bout_over(pos);
+            return;
+        }
     }
 
     leave_stage_running() {
@@ -326,52 +401,56 @@ class Table {
         let pid = plr.pid;
 
         switch (msg.op) {
-            case 'join':    // 加入/离开
+            case 'join':    // 加入
                 {
                     // 已经存在
-                    if (this.all_plrs[pid]) {
-                        res.msg = 'all exist';
+                    if (this.plrs[pid]) {
+                        res.msg = 'exist';
                         break;
                     }
 
                     // 是否有空位
                     let pos = this.find_empty_seat();
-                    if (pos == 0) {
+                    if (pos == null) {
                         res.msg = 'no empty seat';
                         break;
                     }
 
-                    // 底金是否足够
-                    if (!plr.EnoughCoin(BOUT_FEE)) {
-                        res.msg = 'no empty money';
-                        break;
-                    }
-
-                    this.cnt_plrs++;
-                    this.all_plrs[pid] = plr;
+                    this.plrs[pid] = plr;
                     this.seats[pos].pid = pid;
 
                     this.broadcast({
                         op: "join_n",
                         pid: pid,
                         pos: pos,
+                        name: plr.GetName(),
                     }, true);
 
                     msg.ret = 0;
                     msg.msg = 'ok';
                     break;
                 }
-            case 'leave':
+
+            case 'leave':   // 离开
                 {
+                    if (!this.plrs[pid]) {
+                        msg.msg = 'not exist';
+                        break;
+                    }
+
                     let pos = find_player_seat(pid);
-                    if (!pos) {
+                    if (pos == null) {
                         msg.msg = 'not in seat';
                         break;
                     }
 
-                    this.seats[pos] = { pid: 0, dat: JSON.parse(playing), };
-                    this.cnt_plrs--;
-                    delete this.all_plrs[pid];
+                    this.seats[pos].pid = 0;
+                    if (this.seats[pos].robot == false) {
+                        this.seats[pos].robot = true;
+                        this.seats[pos].quit = true;
+                    }
+
+                    delete this.plrs[pid];
 
                     this.broadcast({
                         op: "leave_n",
@@ -382,20 +461,34 @@ class Table {
                     msg.msg = 'ok';
                     break;
                 }
-            // 玩法操作
+
             case 'look':    // 看牌
                 {
-                    let dat = this.plr_bout_data(plr);
-                    if (!dat) {
-                        res.msg = 'not in bout';
+                    if (this.bout_stage != STAGE_RUNNING) {
+                        res.msg = 'not in stage running';
                         break;
                     }
-                    if (dat.abandon) {
-                        res.msg = 'abandoned';
+
+                    let pos = find_player_seat(pid);
+                    if (pos == null) {
+                        msg.msg = 'not in seat';
                         break;
                     }
-                    if (dat.look) {
-                        res.msg = 'looked yet';
+
+                    let seat = this.seats[pos];
+
+                    if (seat.robot) {
+                        res.msg = 'robot';
+                        break;
+                    }
+
+                    if (seat.out()) {
+                        res.msg = 'out';
+                        break;
+                    }
+
+                    if (seat.look) {
+                        res.msg = 'looked';
                         break;
                     }
 
@@ -404,203 +497,107 @@ class Table {
 
                     this.broadcast({
                         op: "look_n",
-                        pid: pid,
+                        pos: pos,
                     }, true);
 
                     res.ret = 0;
                     res.msg = 'ok';
                     break;
                 }
-            case 'show':    // 公示自己的牌
+
+            case 'action':  // 操作
                 {
-                    let dat = this.plr_bout_data(plr);
-                    if (!dat) {
-                        res.msg = 'not in bout';
-                        break;
-                    }
-                    if (dat.abandon) {
-                        res.msg = 'abandoned';
-                        break;
-                    }
-                    if (dat.look) {
-                        res.msg = 'showed yet';
+                    if (this.bout_stage != STAGE_RUNNING) {
+                        res.msg = 'not in stage running';
                         break;
                     }
 
-                    dat.show = true;
-
-                    // 向所有的人明牌
-                    this.broadcast({
-                        op: "show_n",
-                        pid: pid,
-                        cards: this.get_cards(dat.index),
-                    }, true);
-
-                    res.ret = 0;
-                    res.msg = 'ok';
-                    break;
-                }
-            case 'recharge':    // 加码
-                {
-                    let dat = this.plr_bout_data(plr);
-                    if (!dat) {
-                        res.msg = 'not in bout';
+                    let pos = find_player_seat(pid);
+                    if (pos == null) {
+                        msg.msg = 'not in seat';
                         break;
                     }
 
-                    if (dat.abandon) {
-                        res.msg = 'abandoned';
+                    let seat = this.seats[pos];
+
+                    if (seat.robot) {
+                        res.msg = 'robot';
                         break;
                     }
 
-                    // 是不是我的；轮子
-                    let pos = this.find_player_seat(pid);
+                    if (seat.out()) {
+                        res.msg = 'out';
+                        break;
+                    }
+
                     if (this.bout_turn != pos) {
                         res.msg = 'not your turn';
                         break;
                     }
 
-                    if (msg.money <= 0 || msg.money > MAX_SEATS_CNT) {
-                        res.msg = 'invalid';
-                        break;
-                    }
-
-                    // TODO 数量合法性检测
-
-                    // 钱是否足够
-                    if (!plr.EnoughCoin(msg.money)) {
-                        res.msg = 'not enough money';
-                        break;
-                    }
-
-                    // 通过
-                    plr.SubCoin(msg.money);
-                    this.bout_total_money += msg.money;
-
-                    this.set_turn_next();
-
-                    // 通知结果
-                    // 通知下一位
-                    this.broadcast({
-                        op: 'recharge_n',
+                    let ntf = {
+                        op: 'action_n',
                         pid: pid,
-                        money: msg.money,
-                        next: this.bout_turn,
-                    }, true);
-
-                    res.ret = 0;
-                    res.msg = 'ok';
-                    break;
-                }
-            case 'abandon':     // 弃牌
-                {
-                    let dat = this.plr_bout_data(plr);
-                    if (!dat) {
-                        res.msg = 'not in bout';
-                        break;
-                    }
-                    if (dat.abandon) {
-                        res.msg = 'abandoned';
-                        break;
                     }
 
-                    dat.abandon = true;
-
-                    // 通知有人弃牌了
-                    this.broadcast({
-                        op: 'abandon_n',
-                        pid: pid,
-                    }, true);
-
-                    res.ret = 0;
-                    res.msg = 'ok';
-                    break;
-                }
-            case 'open':        // 开牌
-                {
-                    let dat = this.plr_bout_data(plr);
-                    if (!dat) {
-                        res.msg = 'not in bout';
-                        break;
-                    }
-                    if (dat.abandon) {
-                        res.msg = 'abandoned';
-                        break;
-                    }
-
-                    // 必须是我的轮子
-                    let pos = this.find_player_seat(plr.pid);
-                    if (this.bout_turn != pos) {
-                        res.msg = 'not your turn';
-                        break;
-                    }
-
-                    if (!msg.who || !msg.money) {
-                        ret.msg = 'lack args';
-                        break;
-                    }
-
-                    // 检测目标是否合法
-                    let [who, who_dat] = this.get_pos_dat(msg.who);
+                    // 玩家出牌操作
                     {
-                        if (!who) {
-                            ret.msg = 'invalid who';
+                        let subop = msg.subop || "waiver";
+                        ntf.subop = subop;
+
+                        if (msg.subop == "attack") {        // 攻击
+                            let target_seat = get_seat(msg.target);
+                            if (target_seat == null) {
+                                res.msg = 'INVALID target';
+                                break;
+                            }
+
+                            if (target_seat.out()) {
+                                res.msg = 'target OUT';
+                                break;
+                            }
+
+                            ntf.target = target_seat.pos;
+
+                            // 比大小
+                            if (seat.score > target_seat.score) {
+                                seat.balance += target_seat.balance;
+                                target_seat.killed(pos);
+                                ntf.win = true;
+                            } else {
+                                target_seat.balance += seat.balance;
+                                seat.killed(target_seat.pos);
+                                ntf.win = false;
+                            }
+
+                            this.set_bout_turn(this.find_bout_next());
+
+                        } else if (msg.subop == "quit") {   // 退出本局
+                            let next = this.find_bout_next()
+                            if (next == pos) {
+                                res.msg = 'quit FAILED';
+                                break;
+                            }
+
+                            seat.quit = true;
+                            plr.AddCoin(seat.balance);
+                            this.set_bout_turn(next);
+
+                        } else if (msg.subop == "waiver") { // 放弃
+                            this.set_bout_turn(this.find_bout_next());
+                        } else {
+                            res.msg = 'unknown subop';
                             break;
                         }
-
-                        if (!who_dat.game) {
-                            res.msg = 'not in bout';
-                            break;
-                        }
-
-                        if (who_dat.abandon) {
-                            res.msg = 'abandoned';
-                            break;
-                        }
                     }
 
-                    if (msg.money <= 0 || msg.money > MAX_SEATS_CNT) {
-                        res.msg = 'invalid';
-                        break;
-                    }
-
-                    // TODO 数量合法性检测
-
-                    // 钱是否足够
-                    if (!plr.EnoughCoin(msg.money)) {
-                        res.msg = 'not enough money';
-                        break;
-                    }
-
-                    // vs
-                    plr.SubCoin(msg.money);
-                    this.bout_total_money += msg.money;
-                    this.set_turn_next();
-
-                    let lost = true;
-                    if (dat.score > who_dat.score) {
-                        who_dat.abandon = true;
-                        lost = false;
-                    } else {
-                        who.abandon = true;
-                    }
-
-                    process.nextTick(() => {
-                        return {
-                            op: 'open_n',
-                            pid: pid,
-                            who: msg.who,
-                            lost: lost,
-                            money: msg.money,
-                        }
-                    });
-                    // 目标：msg.who;
-                    // 开钱: msg.money; 要加倍 必须是我的轮子
+                    this.broadcast(ntf, true);
 
                     res.ret = 0;
                     res.msg = 'ok';
                     break;
                 }
+
             default:
                 console.info(`未处理的消息: ${msg.op}`);
         }
@@ -611,39 +608,64 @@ class Table {
     // ------------------------------------------------------------------------
     // aux
 
-    bout_init() {
-        this.bout_turn = ;             // 下一个该出牌的人
-        this.bout_total_balance = 0;    // 总金额
+    get_seat(pos) {
+        pos = +pos;
+
+        do {
+            if (isNaN(pos)) {
+                break;
+            }
+
+            if (pos < 0 || pos >= MAX_SEATS_CNT) {
+                break;
+            }
+
+            return this.seats[pos];
+        } while (false);
+
+        return null;
     }
 
     broadcast(msg, delay) {
         let str = JSON.stringify(msg);
-        if (delay) {
-            process.nextTick(() => {
-                for (let plr in this.all_plrs) {
-                    plr.SendStr(str);
-                }
-            });
-        } else {
-            for (let plr in this.all_plrs) {
+
+        let func = () => {
+            for (let plr in this.plrs) {
                 plr.SendStr(str);
             }
+        };
+
+        if (delay) {
+            process.nextTick(func);
+        } else {
+            func();
         }
     }
 
-    leave(plr) {
-        let pid = plr.pid;
-        let pos = find_player_seat(pid);
-        if (pos) {
-            this.seats[pos] = { pid: 0, dat: JSON.parse(playing), };
-        } else {
-            return false;
+    // 查找下一个出牌者(不跳过机器人)
+    find_bout_next() {
+        for (let i = 1; i <= MAX_SEATS_CNT; i++) {
+            let pos = (this.bout_turn + i) % MAX_SEATS_CNT;
+            let seat = this.seats[pos];
+            if (seat.out()) {
+                continue;
+            }
+
+            return pos;
         }
 
-        this.cnt_plrs--;
-        delete this.all_plrs[pid];
+        console.warn(false, "find_bout_next FAILED");
+        return null;
+    }
 
-        return true;
+    // 设置下一个出牌者
+    set_bout_turn(turn) {
+        this.bout_turn = turn;
+        this.bout_time = Now();
+        this.broadcast({
+            op: 'turn',
+            turn: turn,
+        });
     }
 
     // 是否可进入 STAGE_RUNNING 阶段
@@ -658,62 +680,29 @@ class Table {
     }
 
     find_empty_seat() {
-        for (let i = 1; i < MAX_SEATS_CNT; i++) {
+        for (let i = 0; i < MAX_SEATS_CNT; i++) {
             if (this.seats[i].pid == 0) {
                 return i;
             }
         }
 
-        return 0;
+        return null;
     }
 
     find_player_seat(pid) {
-        if (!pid) {
-            return 0;
-        }
-
-        for (let i = 1; i < MAX_SEATS_CNT; i++) {
-            if (this.seats[i].pid == pid) {
+        for (let i = 0; i < MAX_SEATS_CNT; i++) {
+            if (this.seats[i].pid === pid) {
                 return i;
             }
         }
 
-        return 0;
-    }
-
-    set_host() {
-        // TODO
-        // this.host = 1;
+        return null;
     }
 
     get_plr(pos) {
         let pid = this.seats[pos].pid;
         if (pid) {
             return this.plrs[pid];
-        }
-    }
-
-    kick(plr) {
-        this.leave(plr);
-    }
-
-    // 玩家是否再赌博中
-    plr_in_bout(plr) {
-        let pos = this.find_player_seat(plr.pid);
-        if (pos) {
-            return this.seats[pos].dat.game;
-        }
-
-        return false;
-    }
-
-    plr_bout_data(plr) {
-        let pos = this.find_player_seat(plr.pid);
-        if (pos) {
-            let dat = this.seats[pos].dat;
-            if (dat.game) {
-                return dat;
-            }
         }
     }
 
@@ -725,40 +714,9 @@ class Table {
         ];
     }
 
-    set_turn_next() {
-        let curr = this.turn;
-
-        do {
-            this.bout_turn++;
-
-            if (this.seats[this.bout_turn][pos].pid) {
-                break;
-            }
-
-            if (this.bout_turn == curr) {
-                console.error('set_turn_next failed');
-                return false;
-            }
-
-            if (this.bout_turn >= MAX_SEATS_CNT) {
-                this.bout_turn = 1;
-            }
-        } while (true);
-        return true;
-    }
-
-    get_pos_dat(pos) {
-        if (pos > 0 && pos < MAX_SEATS_CNT) {
-            let pid = this.seats[pos].pid;
-            if (pid) {
-                let plr = this.all_plrs[pid];
-                if (plr) {
-                    return [plr, this.seats[pos].dat];
-                }
-            }
-        }
-
-        return [];
+    // 结束本局
+    set_bout_over(winner) {
+        // ..
     }
 }
 
