@@ -15,10 +15,11 @@ function wss_start() {
     });
 
     wss.on('connection', function (ws) {
+        wss_cnt++;
+
         ws.on('message', function (message) {
 
             let msg;
-            wss_cnt++;
 
             try {
                 msg = JSON.parse(message);
@@ -44,7 +45,7 @@ function wss_start() {
     });
 
     this.tid = setInterval(() => {
-        console.log(`[${new Date().toISOString()}] total %d wss connections !`, wss_cnt);
+        // console.log(`[${new Date().toISOString()}] total %d wss connections !`, wss_cnt);
     }, 30 * 1000);
 }
 

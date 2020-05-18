@@ -1,3 +1,5 @@
+let assert = require('assert');
+
 // ----------------------------------------------------------------------------
 // const
 
@@ -150,7 +152,8 @@ function calc_score(c1, c2, c3) {
 // Seat
 
 class Seat {
-    constructor(pos) {
+    constructor(tab, pos) {
+        this.tab = tab;             // 桌子
         this.pos = pos;             // 位置
         this.pid = 0;               // 玩家ID，默认为0
         this.robot = true;          // 是否机器人(每一局开始时根据pid重置)
@@ -165,9 +168,9 @@ class Seat {
 
     reset() {
         if (this.pid) {
-            this.robot = true;
-        } else {
             this.robot = false;
+        } else {
+            this.robot = true;
         }
 
         this.index = 0;
@@ -206,12 +209,12 @@ class Seat {
         }
 
         if (this.pid) {
-            obj.name = this.plrs[this.pid].GetName();
+            obj.name = this.tab.plrs[this.pid].GetName();
         } else {
-            obj.name = "robot:" + this.pos;
+            obj.name = `robot: ${this.pos}`;
         }
 
-        return ret;
+        return obj;
     }
 }
 
@@ -225,10 +228,11 @@ class Table {
 
         this.seats = Array(MAX_SEATS_CNT);  // 桌子上作的一圈玩家 [pid,...]，注意：0表示无玩家(即为robot)
         for (let i = 0; i < MAX_SEATS_CNT; i++) {
-            this.seats[i] = new Seat(i);
+            this.seats[i] = new Seat(this, i);
         }
 
         this.host = 0;                  // 庄(每一局开始产生随机值)
+        this.bout_turn = 0;             // 该谁出手了
         this.bout_total_balance = 0;    // 底
 
         this.stage_data = {};           // 阶段数据
@@ -238,10 +242,11 @@ class Table {
         this.enter_stage_waiting();
 
         // 扑克牌
+        let idx = 0;
         this.cards = Array(CARD_TYPE_DIAMONDS * CARD_POINT_K);
         for (let i = CARD_TYPE_CLUBS; i <= CARD_TYPE_DIAMONDS; i++) {
             for (let j = CARD_POINT_A; j <= CARD_POINT_K; j++) {
-                this.cards.push(new Card(i, j));
+                this.cards[idx++] = new Card(i, j);
             }
         }
     }
@@ -311,7 +316,7 @@ class Table {
             let seat = this.seats[i];
             seat.reset();
 
-            let plr = this.plrs(seat.pid);
+            let plr = this.plrs[seat.pid];
             if (plr) {
                 plr.SubCoin(BOUT_FEE * 2);
                 seat.value = 1;
@@ -323,6 +328,7 @@ class Table {
 
             let seq = i * 3;
             seat.index = i;
+
             seat.score = calc_score(this.cards[seq], this.cards[seq + 1], this.cards[seq + 2]);
             seat.balance = seat.value * BOUT_FEE;
         }
@@ -332,11 +338,10 @@ class Table {
         // 通知大家，牌发好了
         this.broadcast({
             op: 'deal_n',
-            info: get_bout_info(),
+            info: this.get_bout_info(),
         });
 
-        let next = this.set_bout_turn(this.host);
-        assert(next, "没有找到下一个出牌者");
+        this.set_bout_turn(this.host);
     }
 
     update_stage_running() {
@@ -450,40 +455,9 @@ class Table {
                         name: plr.GetName(),
                     }, true);
 
-                    msg.ret = 0;
-                    msg.msg = 'ok';
-                    msg.info = this.get_bout_info();
-                    break;
-                }
-
-            case 'leave':   // 离开
-                {
-                    if (!this.plrs[pid]) {
-                        msg.msg = 'not exist';
-                        break;
-                    }
-
-                    let pos = find_player_seat(pid);
-                    if (pos == null) {
-                        msg.msg = 'not in seat';
-                        break;
-                    }
-
-                    this.seats[pos].pid = 0;
-                    if (this.seats[pos].robot == false) {
-                        this.seats[pos].robot = true;
-                        this.seats[pos].quit = true;
-                    }
-
-                    delete this.plrs[pid];
-
-                    this.broadcast({
-                        op: "leave_n",
-                        pid: pid,
-                    }, true);
-
-                    msg.ret = 0;
-                    msg.msg = 'ok';
+                    res.ret = 0;
+                    res.msg = 'ok';
+                    res.data = this.get_bout_info();
                     break;
                 }
 
@@ -494,9 +468,9 @@ class Table {
                         break;
                     }
 
-                    let pos = find_player_seat(pid);
+                    let pos = this.find_player_seat(pid);
                     if (pos == null) {
-                        msg.msg = 'not in seat';
+                        res.msg = 'not in seat';
                         break;
                     }
 
@@ -537,9 +511,9 @@ class Table {
                         break;
                     }
 
-                    let pos = find_player_seat(pid);
+                    let pos = this.find_player_seat(pid);
                     if (pos == null) {
-                        msg.msg = 'not in seat';
+                        res.msg = 'not in seat';
                         break;
                     }
 
@@ -571,7 +545,7 @@ class Table {
                         ntf.subop = subop;
 
                         if (msg.subop == "attack") {        // 攻击
-                            let target_seat = get_seat(msg.target);
+                            let target_seat = this.get_seat(msg.target);
                             if (target_seat == null) {
                                 res.msg = 'INVALID target';
                                 break;
@@ -641,9 +615,9 @@ class Table {
                         break;
                     }
 
-                    let pos = find_player_seat(pid);
+                    let pos = this.find_player_seat(pid);
                     if (pos == null) {
-                        msg.msg = 'not in seat';
+                        res.msg = 'not in seat';
                         break;
                     }
 
@@ -704,6 +678,35 @@ class Table {
         plr.SendMsg(res);
     }
 
+    onNotice(plr, ntf, ...args) {
+        if (ntf == 'offline') {
+
+            let pid = plr.GetPid();
+            if (!this.plrs[pid]) {
+                return;
+            }
+
+            let pos = this.find_player_seat(pid);
+            if (pos == null) {
+                return;
+            }
+
+            this.seats[pos].pid = 0;
+            if (this.seats[pos].robot == false) {
+                this.seats[pos].robot = true;
+                this.seats[pos].quit = true;
+            }
+
+            delete this.plrs[pid];
+
+            this.broadcast({
+                op: "leave_n",
+                pos: pos,
+                pid: pid,
+            });
+
+        }
+    }
     // ------------------------------------------------------------------------
     // aux
 
@@ -729,7 +732,8 @@ class Table {
         let str = JSON.stringify(msg);
 
         let func = () => {
-            for (let plr in this.plrs) {
+            for (let pid in this.plrs) {
+                let plr = this.plrs[pid];
                 plr.SendStr(str);
             }
         };
@@ -815,11 +819,13 @@ class Table {
 
     // 结束本局
     set_bout_over(winner) {
-        let seat = this.seats[winner];
-        if (!seat.robot) {
-            let plr = this.plrs[seat.pid];
-            plr.AddCoin(this.bout_total_balance);
-            this.bout_total_balance = 0;
+        if (winner) {
+            let seat = this.seats[winner];
+            if (!seat.robot) {
+                let plr = this.plrs[seat.pid];
+                plr.AddCoin(this.bout_total_balance);
+                this.bout_total_balance = 0;
+            }
         }
 
         this.broadcast({
@@ -838,7 +844,7 @@ class Table {
         };
 
         for (let i = 0; i < MAX_SEATS_CNT; i++) {
-            info.seats.append(this.seats[i].toMsg());
+            info.seats[i] = this.seats[i].toMsg();
         }
 
         return info;
@@ -871,4 +877,8 @@ exports.Save = () => {
 
 exports.onMessage = function (ws, msg) {
     tab.onMessage(ws.plr, msg);
+}
+
+exports.onNotice = function (plr, ntf, ...args) {
+    tab.onNotice(plr, ntf, ...args);
 }

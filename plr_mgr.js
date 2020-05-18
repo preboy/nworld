@@ -59,12 +59,20 @@ class Player {
         return this.data;
     }
 
+    GetPid() {
+        return this.pid;
+    }
+
     GetName() {
         return this.data.Name;
     }
 
     GetData() {
         return this.data.Play;
+    }
+
+    GetCoin() {
+        return this.data.Coin;
     }
 
     save(force = false) {
@@ -117,6 +125,7 @@ class Player {
     }
 
     offline() {
+        gModGame.onNotice(this, 'offline');
         this.save();
 
         this.ws.plr = null;
@@ -161,11 +170,19 @@ class Player {
         process.nextTick(() => {
             this.SendMsg({
                 op: "property",
-                Coin: this.data.Coin,
-                Gold: this.data.Gold,
-                Card: this.data.Card,
+                coin: this.data.Coin,
+                // Gold: this.data.Gold,
+                // Card: this.data.Card,
             });
         });
+    }
+
+    toMsg() {
+        let ret = {
+            name: this.GetName(),
+
+        }
+        return ret;
     }
 }
 

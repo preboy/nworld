@@ -30,10 +30,17 @@ let handlers = {
                 break;
             }
 
+            let plr = gPlrMgr.GetPlr(acct);
             // 发送玩家信息，玩家进入游戏
             process.nextTick(() => {
-                gPlrMgr.GetPlr(acct).online(ws);
+                plr.online(ws);
             });
+
+            msg.data = {
+                pid: plr.GetPid(),
+                coin: plr.GetCoin(),
+                name: plr.GetName(),
+            }
 
             msg.ret = 0;
             msg.msg = 'ok';
@@ -52,11 +59,13 @@ let handlers = {
             if (!amount || amount < 0) {
                 msg.ret = 1;
                 msg.msg = 'invalid amount';
+                break;
             }
 
-            if (ws.plr) {
+            if (!ws.plr) {
                 msg.ret = 2;
                 msg.msg = 'NOT login';
+                break;
             }
 
             ws.plr.AddCoin(amount);
@@ -70,7 +79,6 @@ let handlers = {
 
     // 游戏内消息
     join: def_handler,
-    leave: def_handler,
     look: def_handler,
     action: def_handler,
     value: def_handler,
