@@ -214,6 +214,10 @@ class Seat {
             obj.name = `robot: ${this.pos}`;
         }
 
+        if (this.winner) {
+            obj.cards = this.get_cards(this.index);
+        }
+
         return obj;
     }
 }
@@ -296,7 +300,8 @@ class Table {
             }
         } else {
             if (able) {
-                this.stage_data.cd = 5;
+                this.stage_data.cd = 2;
+                this.notice(`新的一局2秒后开启`);
             }
         }
     }
@@ -306,6 +311,8 @@ class Table {
         for (let i = 0; i < 7; i++) {
             gCoreUtils.Shuffle(this.cards);
         }
+
+        this.notice(`新局已经开启`);
     }
 
     enter_stage_running() {
@@ -414,6 +421,7 @@ class Table {
     }
 
     leave_stage_running() {
+        this.notice(`本局已结束`);
     }
 
     // ------------------------------------------------------------------------
@@ -450,9 +458,7 @@ class Table {
 
                     this.broadcast({
                         op: "join_n",
-                        pid: pid,
-                        pos: pos,
-                        name: plr.GetName(),
+                        data: this.seats[pos].toMsg(),
                     }, true);
 
                     res.ret = 0;
@@ -504,7 +510,7 @@ class Table {
                     break;
                 }
 
-            case 'action':  // 操作
+            case 'attack':  // 攻击
                 {
                     if (this.bout_stage != STAGE_RUNNING) {
                         res.msg = 'not in stage running';
@@ -535,71 +541,54 @@ class Table {
                     }
 
                     let ntf = {
-                        op: 'action_n',
+                        op: 'attack_n',
                         pid: pid,
+                        pos: pos,
                     }
 
                     // 玩家出牌操作
-                    {
-                        let subop = msg.subop || "waiver";
-                        ntf.subop = subop;
 
-                        if (msg.subop == "attack") {        // 攻击
-                            let target_seat = this.get_seat(msg.target);
-                            if (target_seat == null) {
-                                res.msg = 'INVALID target';
-                                break;
-                            }
-
-                            if (target_seat.out()) {
-                                res.msg = 'target OUT';
-                                break;
-                            }
-
-                            let amount = target_seat.value * BOUT_FEE
-
-                            if (!plr.EnoughCoin(amount)) {
-                                res.msg = 'NOT enough coin';
-                                break;
-                            }
-
-                            ntf.target = target_seat.pos;
-
-                            plr.SubCoin(amount);
-
-                            // 比大小
-                            if (seat.score > target_seat.score) {
-                                seat.balance += target_seat.balance;
-                                seat.balance += amount;
-                                target_seat.killed(pos);
-                                ntf.win = true;
-                            } else {
-                                target_seat.balance += seat.balance;
-                                target_seat.balance += amount;
-                                seat.killed(target_seat.pos);
-                                ntf.win = false;
-                            }
-
-                            this.set_bout_turn(this.find_bout_next());
-
-                        } else if (msg.subop == "quit") {   // 退出本局
-                            let next = this.find_bout_next()
-                            if (next == pos) {
-                                res.msg = 'quit FAILED';
-                                break;
-                            }
-
-                            seat.quit = true;
-                            plr.AddCoin(seat.balance);
-                            this.set_bout_turn(next);
-
-                        } else if (msg.subop == "waiver") { // 放弃
-                            this.set_bout_turn(this.find_bout_next());
-                        } else {
-                            res.msg = 'unknown subop';
-                            break;
-                        }
+                    let target_seat = this.get_seat(msg.target);
+                    if (target_seat == null) {
+                        res.msg = 'INVALID target';
+                        break;
                     }
+
+                    if (target_seat.out()) {
+                        res.msg = 'target OUT';
+                        break;
+                    }
+
+                    let amount = target_seat.value * BOUT_FEE;
+                    if (!plr.EnoughCoin(amount)) {
+                        res.msg = 'NOT enough coin';
+                        break;
+                    }
+
+                    plr.SubCoin(amount);
+
+                    ntf.target = msg.target;
+
+                    // 比大小
+                    if (seat.score > target_seat.score) {
+                        seat.balance += target_seat.balance;
+                        seat.balance += amount;
+                        target_seat.balance = 0;
+                        target_seat.killed(pos);
+                        ntf.win = true;
+                        ntf.data_lost = target_seat.toMsg();
+                        ntf.data_win = seat.toMsg();
+                    } else {
+                        target_seat.balance += seat.balance;
+                        target_seat.balance += amount;
+                        seat.balance = 0;
+                        seat.killed(target_seat.pos);
+                        ntf.data_win = target_seat.toMsg();
+                        ntf.data_lost = seat.toMsg();
+                        ntf.win = false;
+                    }
+
+                    this.set_bout_turn(this.find_bout_next());
 
                     this.broadcast(ntf, true);
 
@@ -608,7 +597,7 @@ class Table {
                     break;
                 }
 
-            case 'value':   // 增加手牌价值
+            case 'quit':    // 退出本局
                 {
                     if (this.bout_stage != STAGE_RUNNING) {
                         res.msg = 'not in stage running';
@@ -633,8 +622,76 @@ class Table {
                         break;
                     }
 
-                    if (seat.look) {
-                        res.msg = 'looked';
+                    let next = this.find_bout_next();
+                    if (next == pos) {
+                        res.msg = 'quit FAILED';
+                        break;
+                    }
+
+                    seat.quit = true;
+                    plr.AddCoin(seat.balance);
+                    this.set_bout_turn(next);
+
+                    break;
+                }
+
+            case 'waiver':  // 放弃，开始下一局
+                {
+                    if (this.bout_stage != STAGE_RUNNING) {
+                        res.msg = 'not in stage running';
+                        break;
+                    }
+
+                    let pos = this.find_player_seat(pid);
+                    if (pos == null) {
+                        res.msg = 'not in seat';
+                        break;
+                    }
+
+                    let seat = this.seats[pos];
+
+                    if (seat.robot) {
+                        res.msg = 'robot';
+                        break;
+                    }
+
+                    if (seat.out()) {
+                        res.msg = 'out';
+                        break;
+                    }
+
+                    let next = this.find_bout_next();
+                    if (next == pos) {
+                        res.msg = 'quit FAILED';
+                        break;
+                    }
+
+                    // this.set_bout_turn(this.find_bout_next());
+                    break;
+                }
+
+            case 'value':   // 增加手牌价值
+                {
+                    if (this.bout_stage != STAGE_RUNNING) {
+                        res.msg = 'not in stage running';
+                        break;
+                    }
+
+                    let pos = this.find_player_seat(pid);
+                    if (pos === null) {
+                        res.msg = 'not in seat';
+                        break;
+                    }
+
+                    let seat = this.seats[pos];
+
+                    if (seat.robot) {
+                        res.msg = 'robot';
+                        break;
+                    }
+
+                    if (seat.out()) {
+                        res.msg = 'out';
                         break;
                     }
 
@@ -644,12 +701,14 @@ class Table {
                     }
 
                     seat.value++;
+                    seat.balance += BOUT_FEE;
                     plr.SubCoin(BOUT_FEE);
 
                     this.broadcast({
                         op: "value_n",
                         pos: pos,
                         value: seat.value,
+                        balance: seat.balance,
                     }, true);
 
                     res.ret = 0;
@@ -828,10 +887,17 @@ class Table {
             }
         }
 
-        this.broadcast({
+        let ntf = {
             op: 'bout_result_n',
             pos: winner,
-        });
+            cards: Array(17),
+        };
+
+        for (let i = 0; i < MAX_SEATS_CNT; i++) {
+            ntf.cards[i] = this.get_cards(i);
+        }
+
+        this.broadcast(ntf);
 
         this.switch_stage();
     }
@@ -848,6 +914,13 @@ class Table {
         }
 
         return info;
+    }
+
+    notice(str) {
+        this.broadcast({
+            op: 'notify',
+            str: str,
+        }, true);
     }
 }
 

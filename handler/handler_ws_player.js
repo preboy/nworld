@@ -80,7 +80,9 @@ let handlers = {
     // 游戏内消息
     join: def_handler,
     look: def_handler,
-    action: def_handler,
+    attack: def_handler,
+    quit: def_handler,
+    waiver: def_handler,
     value: def_handler,
 
     dump: def_handler,
