@@ -68,11 +68,11 @@ function calc_score(c1, c2, c3) {
     });
 
     // 炸
-    if (c1.point == c3.point) {
-        if (c1.point == CARD_POINT_A) {
+    if (arr[0].point == arr[2].point) {
+        if (arr[0].point == CARD_POINT_A) {
             return HAND_TYPE_6 + 14;
         }
-        return HAND_TYPE_6 + c1.point;
+        return HAND_TYPE_6 + arr[0].point;
     }
 
     let seq = false;    // 顺子
@@ -214,8 +214,8 @@ class Seat {
             obj.name = `robot: ${this.pos}`;
         }
 
-        if (this.winner) {
-            obj.cards = this.get_cards(this.index);
+        if (this.winner != null) {
+            obj.cards = this.tab.get_cards(this.index);
         }
 
         return obj;
