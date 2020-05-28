@@ -632,8 +632,11 @@ class Table {
                         break;
                     }
 
-                    seat.quit = true;
                     plr.AddCoin(seat.balance);
+
+                    seat.quit = true;
+                    seat.balance = 0;
+
                     this.set_bout_turn(next);
 
                     this.broadcast({
@@ -906,7 +909,7 @@ class Table {
             let seat = this.seats[winner];
             if (!seat.robot) {
                 let plr = this.plrs[seat.pid];
-                plr.AddCoin(this.bout_total_balance);
+                plr.AddCoin(this.bout_total_balance + seat.balance);
                 this.bout_total_balance = 0;
             }
         }
