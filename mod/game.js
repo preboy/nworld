@@ -161,6 +161,7 @@ class Seat {
         this.score = 0;             // 牌面得分
         this.look = false;          // 本局是否看牌
         this.quit = false;          // 本局是否退出
+        this.waiver = false;        // 是否认输
         this.value = 1;             // 价值系数
         this.balance = 0;           // 本局当前余额
         this.winner = null;         // 击败我的人
@@ -177,6 +178,8 @@ class Seat {
         this.score = 0;
         this.look = false;
         this.quit = false;
+        this.waiver = false;
+        this.value = 1;
         this.balance = 0;
         this.winner = null;
     }
@@ -187,11 +190,17 @@ class Seat {
     }
 
     out() {
-        if (this.quit)
+        if (this.quit) {
             return true;
+        }
 
-        if (this.winner != null)
+        if (this.waiver) {
             return true;
+        }
+
+        if (this.winner != null) {
+            return true;
+        }
 
         return false;
     }
@@ -203,6 +212,7 @@ class Seat {
             robot: this.robot,
             look: this.look,
             quit: this.quit,
+            waiver: this.waiver,
             value: this.value,
             balance: this.balance,
             winner: this.winner,
@@ -378,45 +388,34 @@ class Table {
             }
         }
 
-        // 是否结束本局(所有玩家被KO)
-        {
-            let left_player = false;
-            for (let i = 0; i < MAX_SEATS_CNT; i++) {
-                let seat = this.seats[i];
-                if (seat.robot || seat.out()) {
-                    continue;
-                }
-
-                left_player = true;
-                break;
-            }
-
-            if (!left_player) {
-                this.set_bout_over(null);
-                return;
-            }
-        }
-
-        // 是否结束本局(只剩唯一的活口了)
+        // 是否结束本局
         {
             let pos;
-            let cnt = 0;
+
+            let robot_cnt = 0;
+            let player_cnt = 0;
+
             for (let i = 0; i < MAX_SEATS_CNT; i++) {
                 let seat = this.seats[i];
-                if (seat.quit) {
+                if (seat.out()) {
                     continue;
                 }
 
-                cnt++;
-                pos = i;
-                if (cnt > 1) {
-                    return;
+                if (seat.robot) {
+                    robot_cnt++;
+                } else {
+                    pos = i;
+                    player_cnt++;
                 }
             }
 
-            // assert(cnt == 1, "所有人都放弃了本局");
-            this.set_bout_over(pos);
-            return;
+            if (player_cnt == 0) {
+                this.set_bout_over(null);
+            } else if (player_cnt == 1) {
+                if (robot_cnt == 0) {
+                    this.set_bout_over(pos);
+                }
+            }
         }
     }
 
@@ -622,6 +621,11 @@ class Table {
                         break;
                     }
 
+                    if (this.bout_turn != pos) {
+                        res.msg = 'not your turn';
+                        break;
+                    }
+
                     let next = this.find_bout_next();
                     if (next == pos) {
                         res.msg = 'quit FAILED';
@@ -632,6 +636,14 @@ class Table {
                     plr.AddCoin(seat.balance);
                     this.set_bout_turn(next);
 
+                    this.broadcast({
+                        op: 'quit_n',
+                        pos: pos,
+                        data: seat.toMsg(),
+                    }, true);
+
+                    res.ret = 0;
+                    res.msg = 'ok';
                     break;
                 }
 
@@ -666,7 +678,19 @@ class Table {
                         break;
                     }
 
-                    // this.set_bout_turn(this.find_bout_next());
+                    seat.waiver = true;
+
+                    this.bout_total_balance += seat.balance;
+                    seat.balance = 0;
+
+                    this.broadcast({
+                        op: 'waiver_n',
+                        pos: pos,
+                        data: seat.toMsg(),
+                    }, true);
+
+                    res.ret = 0;
+                    res.msg = 'ok';
                     break;
                 }
 
@@ -878,7 +902,7 @@ class Table {
 
     // 结束本局
     set_bout_over(winner) {
-        if (winner) {
+        if (winner != null) {
             let seat = this.seats[winner];
             if (!seat.robot) {
                 let plr = this.plrs[seat.pid];
