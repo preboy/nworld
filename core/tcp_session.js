@@ -24,7 +24,7 @@ class Session {
             let packet_size = data.readUInt32LE(0);
             if (packet_size > 0x10000) {
                 console.log("超大的包");
-                c.end("超大的包");
+                c.destroy();
                 return;
             }
 
@@ -37,7 +37,7 @@ class Session {
             let bytes = data.copy(packet, 0, 4, 4 + packet_size);
             if (bytes != packet_size) {
                 console.log("拷贝消息失败");
-                c.end("拷贝消息失败");
+                c.destroy();
                 return;
             }
 
@@ -47,7 +47,7 @@ class Session {
                 let bytes = data.copy(this.recv_buffer, 0, (packet_size + 4), data.byteLength - (packet_size + 4));
                 if (bytes != data.byteLength - (packet_size + 4)) {
                     console.log("拷贝数据失败");
-                    c.end("拷贝数据失败");
+                    c.destroy();
                     return;
                 }
             }
@@ -108,7 +108,7 @@ class Session {
 
     Stop() {
         if (!this.socket.destroyed) {
-            this.socket.end();
+            this.socket.destroy();
         }
     }
 }
