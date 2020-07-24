@@ -100,7 +100,7 @@ function calc_score(c1, c2, c3) {
         }
 
         // 同花
-        if (arr[0] != CARD_POINT_A) {
+        if (arr[0].point != CARD_POINT_A) {
             return HAND_TYPE_4 + arr[2].point * 10000 + arr[1].point * 100 + arr[0].point;
         }
 
@@ -132,7 +132,7 @@ function calc_score(c1, c2, c3) {
         return HAND_TYPE_2 + pair[0] * 10000 + pair[1];
     }
 
-    // 单排得分
+    // 单牌得分
     if (arr[0].point == CARD_POINT_A) {
         return HAND_TYPE_1 + 14 * 10000 + arr[2].point * 100 + arr[1].point;
     }
