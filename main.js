@@ -27,12 +27,12 @@ on_start();
 
 
 // command parser
-const xterm = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
+if (process.stdin.isTTY) {
+    let xterm = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
 
-if (xterm) {
     xterm.setPrompt('server# ');
     xterm.prompt();
 
