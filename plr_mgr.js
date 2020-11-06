@@ -235,7 +235,7 @@ function GetPlr(pid) {
 }
 
 function Start() {
-    gCoreEvtMgr.Once(gConst.EVT_REDIS_READY, () => {
+    gCoreEvtMgr.Once(gConst.EVT_SYS_REDIS_READY, () => {
         load_all_players();
     });
 }

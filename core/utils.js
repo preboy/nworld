@@ -35,6 +35,7 @@ function Shuffle(arr) {
 			[arr[i], arr[r]] = [arr[r], arr[i]];
 		}
 	}
+	return arr;
 }
 
 function Md5(str) {

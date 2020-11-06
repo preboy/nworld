@@ -7,7 +7,6 @@ const readline = require('readline');
 require('./core');
 require('./handler');
 
-
 g_load_module('.', 'cmder');
 g_load_module('.', 'const')
 g_load_module('.', 'deploy');
@@ -15,17 +14,17 @@ g_load_module('.', 'hsvc');
 g_load_module('.', 'db_mgr');
 g_load_module('.', 'net_mgr');
 g_load_module('.', 'plr_mgr');
+
 g_load_module('mod', 'game');
+g_load_module('mod', 'ddz');
 
 
+// ----------------------------------------------------------------------------
 // load config
 let [conf, mconf] = g_get_conf('CreatureTeam');
 
 
-// do start
-on_start();
-
-
+// ----------------------------------------------------------------------------
 // command parser
 if (process.stdin.isTTY) {
     let xterm = readline.createInterface({
@@ -49,21 +48,34 @@ if (process.stdin.isTTY) {
 }
 
 
-// event
+// ----------------------------------------------------------------------------
+// server run
+
+on_start();
+
+let server_run_tid = setInterval(() => {
+    gModDdz.Update();
+}, 10);
+
+
+// ----------------------------------------------------------------------------
+// server events
+
 function on_start() {
     gDbMgr.Start(() => {
-        gCoreEvtMgr.Fire(gConst.EVT_REDIS_READY);
-        gCoreEvtMgr.Fire(gConst.EVT_SYS_READY);
+        gCoreEvtMgr.Fire(gConst.EVT_SYS_REDIS_READY);
+        gCoreEvtMgr.Fire(gConst.EVT_SYS_SERVER_READY);
     });
 
+    gModDdz.Start();
     gModGame.Start();
     gPlrMgr.Start();
 
-    gCoreEvtMgr.Once(gConst.EVT_SYS_READY, () => {
+    gCoreEvtMgr.Once(gConst.EVT_SYS_SERVER_READY, () => {
         gHsvc.Start();
         gNetMgr.Start();
 
-        console.log('server is ready');
+        console.log('server is RUNNING');
     });
 }
 
@@ -73,19 +85,20 @@ function on_stop() {
 
     gPlrMgr.Stop();
     gModGame.Stop();
+    gModDdz.Stop();
 
     gDbMgr.Stop();
 }
 
 // ----------------------------------------------------------------------------
-// process events
+// process
 
+// process events
 process.on('uncaughtException', (err) => {
     console.error('uncaughtException', err);
 });
 
 // process signal
-
 process.on('SIGHUP', () => {
     console.log(`SIGHUP: server running background`);
 });
@@ -106,6 +119,7 @@ function ProcessExit() {
         return;
     }
 
+    clearInterval(server_run_tid);
     stoping = true;
     on_stop();
 

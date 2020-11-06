@@ -42,6 +42,6 @@ exports.Start = () => {
 
 exports.Stop = () => {
     server.close(() => {
-        console.info(`HTTP SVR stoped!`);
+        console.info(`HTTP SVR stopped !`);
     });
 }

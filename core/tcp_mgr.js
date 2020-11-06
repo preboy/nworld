@@ -110,7 +110,7 @@ class Server {
         if (this.svr) {
             this.svr.close(function () {
                 this.svr = null;
-                console.log("tcp svr closed !");
+                console.log("TCP SVR stopped !");
             });
         }
     }

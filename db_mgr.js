@@ -18,18 +18,18 @@ function start(cb) {
     });
 
     client.on('connect', () => {
-        console.info('redis connect');
+        console.info('redis connected');
         ready = true;
         cb();
     });
 
     client.on('reconnecting', () => {
-        console.info('redis reconnecting');
+        console.info('redis reconnecting ...');
     });
 
     client.on('end', () => {
         ready = false;
-        console.log("redis end");
+        console.log("redis closed");
     });
 }
 
