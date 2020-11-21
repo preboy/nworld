@@ -19,8 +19,8 @@ const POS_E = 0;
 const POS_S = 1;
 const POS_W = 2;
 
-const CALL_LAST = 15 * 1000;    // 最长叫分时间
-const HAND_LAST = 15 * 1000;    // 最长叫分时间
+const CALL_LAST = 5 * 1000;      // 最长叫分时间
+const HAND_LAST = 5 * 1000;      // 最长叫分时间
 
 // 牌副阶段
 const DECK_STAGE_CALL = 1;       // 叫分
@@ -201,44 +201,28 @@ function check_conf(conf) {
     return true;
 }
 
-// 本副牌初始化
-function init_deck(table) {
-    let {conf, calc, data } = table;
-
-    data.player_card = [[],[],[]];
-    data.card = [...gCoreUtils.Shuffle(CARD)];
-    data.deck_data = create_table_deck(table);
-    data.stage_start_ts = Tick();
-
-    data.call_pos = data.deck_data.start_pos;
-    data.call_start_ts = Tick();
-
-    LogicTable.SwitchStage(table, DECK_STAGE_CALL);
-}
-
 // 最终结算的数据结构
 function create_table_calc() {
-    let calc = 
-    {
-        deck : 0,               // 已完成的副数
-        calc : [                // 当前的统计信息
+    let calc = {
+        deck : 0,                   // 已完成的副数
+        calc : [
             {
-                score : 1,      // 最后总得分
-                win_cnt: 0,     // 胜场数
-                lost_cnt : 0,   // 败场数
-                lord_cnt : 0,   // 地主场数
+                score :     1,      // 最后总得分
+                win_cnt:    0,      // 胜场数
+                lost_cnt :  0,      // 败场数
+                lord_cnt :  0,      // 地主场数
             },
             {
-                score : 1,
-                win_cnt: 0,    
-                lost_cnt : 0,  
-                lord_cnt : 0,  
+                score :     1,
+                win_cnt:    0,    
+                lost_cnt :  0,  
+                lord_cnt :  0,
             },
             {
-                score : 1,
-                win_cnt: 0,    
-                lost_cnt : 0,  
-                lord_cnt : 0, 
+                score :     1,
+                win_cnt:    0,
+                lost_cnt :  0,  
+                lord_cnt :  0, 
             },
         ],
 
@@ -248,44 +232,20 @@ function create_table_calc() {
     return calc;
 }
 
-// 运行中的数据
-function create_table_data() {
-    // NOTE: 此处的数据要在 init_deck 中初始化，或者置空
-    let data = 
-    {
-        card : [],              // 洗过的牌
-        deck_data : null,       // from create_table_deck
-        stage_start_ts : 0,     // 当前阶段开始时间戳
-
-        player_card : [[],[],[]],   // 玩家手中的牌
-
-        call_pos : 0,           // 当前叫分者
-        call_start_ts : 0,      // 开始叫分时间
-
-        hand_pos : 0,           // 当前出牌者
-        hand_prev : [],         // 上一家出的牌(非PASS)
-        hand_round : [],        // 本圈的出牌历史
-        hand_start_ts : 0,      // 开始出牌时间
-    };
-
-    return data;
-}
-
 // 一副牌的数据
 function create_table_deck(table) {
-    let {conf, calc, data } = table;
+    let all_cards = [...gCoreUtils.Shuffle(CARD)];
 
-    let deck =
-    {
+    let deck = {
         ts : Tick(),                    // 本副开始时间戳
-        index : calc.deck + 1,          // 当前第n副牌
+        index : table.calc.deck + 1,    // 当前第n副牌
         stage : DECK_STAGE_CALL,        // 当前阶段(叫分、打牌、已结束、流局)
 
-        card : [                        // 手牌
-            [],                         // 东
-            [],                         // 南
-            [],                         // 西
-            [],                         // 底牌
+        card : [                                // 手牌
+            [...all_cards.slice(0,  17)],       // 东
+            [...all_cards.slice(17, 34)],       // 南
+            [...all_cards.slice(34, 51)],       // 西
+            [...all_cards.slice(51, 54)],       // 底牌
         ],
 
         call : {
@@ -314,22 +274,54 @@ function create_table_deck(table) {
             score : [0, 0, 0,],         // 得分
         }
     };
-    
-    let card = data.card;
-        
-    for (let x = 0; x < 3; x++) {
-        for(let i = 0; i < 17; i++) {
-            let idx = x * 17 + i;
-            deck.card[x].push(card[idx]);
-            data.player_card[x].push(card[idx]);
-        }
-    }
-
-    deck.card[3].push(card[51]);
-    deck.card[3].push(card[52]);
-    deck.card[3].push(card[53]);
 
     return deck;
+}
+
+// 运行中的数据
+function create_table_temp() {
+    // NOTE: 此处的数据要在 init_deck 中初始化，或者置空
+    let temp = 
+    {
+        stage_start_ts : 0,     // 当前阶段开始时间戳
+
+        player_card : [         // 玩家手中的牌
+            [],
+            [],
+            [],
+        ],
+
+        call_pos : 0,           // 当前叫分者
+        call_start_ts : 0,      // 开始叫分时间
+
+        hand_pos : 0,           // 当前出牌者
+        hand_prev : [],         // 上一家出的牌(非PASS)
+        hand_round : [],        // 本圈的出牌历史
+        hand_start_ts : 0,      // 开始出牌时间
+    };
+
+    return temp;
+}
+
+
+// 本副牌初始化
+function init_deck(table) {
+    table.deck = create_table_deck(table);
+
+    let { temp, deck } = table;
+
+    temp.player_card = [
+        [...deck.card[0]],
+        [...deck.card[1]],
+        [...deck.card[2]],
+    ];
+
+    temp.stage_start_ts = Tick();
+
+    temp.call_pos = deck.start_pos;
+    temp.call_start_ts = Tick();
+
+    LogicTable.SwitchStage(table, DECK_STAGE_CALL);
 }
 
 function pos_to_pid(table, pos) {
@@ -347,8 +339,7 @@ function pid_to_pos(table, pid) {
 }
 
 function add_history(table, history) {
-    let {conf, calc, data } = table;
-    data.deck_data.hand.push(history);
+    table.deck.hand.push(history);
 }
 
 function get_table_pids(table) {
@@ -368,7 +359,7 @@ function get_table_pids(table) {
 let LogicTable = {};
 
 LogicTable.Update = (table) => {
-    let stage = table.data.deck_data.stage;
+    let stage = table.deck.stage;
 
     switch (stage) {
         case DECK_STAGE_CALL: {
@@ -394,7 +385,7 @@ LogicTable.Update = (table) => {
 };
 
 LogicTable.Message = (table, pid, msg) => {
-    let stage = table.data.deck_data.stage;
+    let stage = table.deck.stage;
 
     switch (stage) {
         case DECK_STAGE_CALL: {
@@ -420,8 +411,7 @@ LogicTable.Message = (table, pid, msg) => {
 };
 
 LogicTable.SwitchStage = (table, next_stage) => {
-    let {conf, calc, data } = table;
-    data.deck_data.stage = next_stage;
+    table.deck.stage = next_stage;
 
     switch (next_stage) {
         case DECK_STAGE_CALL: {
@@ -450,15 +440,15 @@ LogicTable.SwitchStage = (table, next_stage) => {
 // stage call
 
 LogicTable.EnterCALL = (table) => {
-    let {conf, calc, data } = table;
+    let deck = table.deck;
 
     // 通知所有人的牌
-    let player_card = data.player_card;
+    let player_card = table.temp.player_card;
     for (let pos in player_card) {
         send_msg(pos_to_pid(table, pos), {
             id : msg_deal_ntf,
             data : {
-                deck_idx: data.deck_data.index,
+                deck_idx: deck.index,
                 card : player_card[pos],
             }
         });
@@ -466,23 +456,24 @@ LogicTable.EnterCALL = (table) => {
 }
 
 LogicTable.UpdateCALL = (table) => {
-    let {conf, calc, data } = table;
+    let temp = table.temp;
+    let deck = table.deck;    
+    let call = table.deck.call;
 
     let now = Tick();
-    let call = data.deck_data.call;
 
     // 超时未叫分，做自动叫0分
-    if (call.seq[data.call_pos] == -1) {
-        if (now - data.call_start_ts > CALL_LAST) {
+    if (call.seq[temp.call_pos] == -1) {
+        if (now - temp.call_start_ts > CALL_LAST) {
 
             let score = 0;
-            call.seq[data.call_pos] = score;
+            call.seq[temp.call_pos] = score;
 
             let brd = {
                 id : msg_call_brd,
                 data : {
                     curr : {
-                        pos : data.call_pos,
+                        pos : temp.call_pos,
                         score,
                     },
                     next: {
@@ -492,10 +483,10 @@ LogicTable.UpdateCALL = (table) => {
             };
 
             // 设置下一个叫分者
-            let next = next_pos(data.call_pos);
+            let next = next_pos(temp.call_pos);
             if (call.seq[next] == -1) {
-                data.call_pos = next;
-                data.call_start_ts = now;
+                temp.call_pos = next;
+                temp.call_start_ts = now;
                 brd.data.next.pos = next;
             }
 
@@ -503,8 +494,8 @@ LogicTable.UpdateCALL = (table) => {
 
             // 加入叫分历史
             add_history(table, {
-                ts : Tick(),
-                pos : data.call_pos,
+                ts : now,
+                pos : brd.data.curr.pos,
                 type : HISTORY_TYPE_CALL,
                 data : { score },
             });
@@ -530,15 +521,15 @@ LogicTable.UpdateCALL = (table) => {
             call.score = score;
             call.lord_pos = pos;
 
-            data.player_card[pos].push(...data.deck_data.card[3]);
+            temp.player_card[pos].push(...deck.card[3]);
 
-            gCoreUtils.Sort(data.player_card[0]);
-            gCoreUtils.Sort(data.player_card[1]);
-            gCoreUtils.Sort(data.player_card[2]);
+            gCoreUtils.Sort(temp.player_card[0]);
+            gCoreUtils.Sort(temp.player_card[1]);
+            gCoreUtils.Sort(temp.player_card[2]);
 
-            console.log("他们的牌是： e", data.player_card[0]);
-            console.log("他们的牌是： s", data.player_card[1]);
-            console.log("他们的牌是： w", data.player_card[2]);            
+            console.log("他们的牌是： e", temp.player_card[0]);
+            console.log("他们的牌是： s", temp.player_card[1]);
+            console.log("他们的牌是： w", temp.player_card[2]);            
 
             LogicTable.SwitchStage(table, DECK_STAGE_WALK);      
         } else {
@@ -548,8 +539,7 @@ LogicTable.UpdateCALL = (table) => {
 };
 
 LogicTable.MessageCALL = (table, pid, msg) => {
-    let {conf, calc, data } = table;
-    // 玩家消息
+    let { conf, calc, deck, temp } = table;
 
     let res = {
         id : msg.id,
@@ -560,11 +550,19 @@ LogicTable.MessageCALL = (table, pid, msg) => {
     switch(msg.id) {
         case msg_call_req:
         {
+            let now = Tick();
             let pos = pid_to_pos(table, pid);
             let score = msg.data.score;
+            
+            let call = deck.call;
 
-            // 是否已叫分
-            let call = data.deck_data.call;
+            if (score < 0 || score > 3) {
+                msg.ret = -10;
+                msg.msg = "叫分不对";
+                send_msg(pid, msg);
+                return;
+            }
+
             if (call.seq[pos] != -1) {
                 msg.ret = -11;
                 msg.msg = "已经叫过了";
@@ -602,15 +600,15 @@ LogicTable.MessageCALL = (table, pid, msg) => {
             // 设置下一个叫分者
             let next = next_pos(pos);
             if (call.seq[next] == -1) {
-                data.call_pos = next;
-                data.call_start_ts = now;
+                temp.call_pos = next;
+                temp.call_start_ts = now;
                 brd.data.next.pos = next;
             }
 
             broad_msg(get_table_pids(table), brd);
 
             add_history(table, {
-                ts : Tick(),
+                ts : now,
                 pos : pos,
                 type : HISTORY_TYPE_CALL,
                 data : { score },
@@ -624,19 +622,19 @@ LogicTable.MessageCALL = (table, pid, msg) => {
 // stage walk
 
 LogicTable.EnterWALK = (table) => {
-    let {conf, calc, data } = table;
+    let {conf, calc, temp, deck } = table;
 
-    let call = data.deck_data.call;
+    let call = deck.call;
     let pids = get_table_pids(table);
 
     // 下一阶段开始
     let now = Tick();
-    data.stage_start_ts = now;
+    temp.stage_start_ts = now;
 
-    data.hand_pos = call.lord_pos;
-    data.hand_prev = [];
-    data.hand_round = [];
-    data.hand_start_ts = now;
+    temp.hand_pos = call.lord_pos;
+    temp.hand_prev = [];
+    temp.hand_round = [];
+    temp.hand_start_ts = now;
 
     // 通知叫分结果
     broad_msg(pids, {
@@ -660,25 +658,21 @@ LogicTable.EnterWALK = (table) => {
 }
 
 LogicTable.UpdateWALK = (table) => {
-    let {conf, calc, data } = table;
+    let {conf, calc, deck, temp } = table;
 
     let now = Tick();
 
     // 超时未出牌处理
-    let pos = data.hand_pos;
+    let pos = temp.hand_pos;
     let over = false;
     let next = next_pos(pos);
 
-    data.hand_prev;
-
-    if (now - data.hand_start_ts > HAND_LAST) {
-        
+    if (now - temp.hand_start_ts > HAND_LAST) {
         let pids = get_table_pids(table);
 
         // 如果是首家则出一张最小的牌，否则PASS
-        if (data.hand_round.length == 0) {
-
-            data.hand_prev = [data.player_card[pos].shift(1)];
+        if (temp.hand_round.length == 0) {
+            temp.hand_prev = [temp.player_card[pos].shift(1)];
 
             let brd = {
                 id : msg_hand_brd,
@@ -690,17 +684,19 @@ LogicTable.UpdateWALK = (table) => {
                     next : {
                         pos : next,
                     }
-                }
+                };
             };
 
             broad_msg(pids, brd);
 
-            // 胜负判断
-            if (data.player_card[pos].length == 0) {
+            // TODO 胜负判断
+            if (temp.player_card[pos].length == 0) {
                 brd.data.next.pos = -1;
             }
         } else {
-            // 弃牌
+            // PASS
+            temp.hand_prev = [];
+
             let brd = {
                 id : msg_hand_brd,
                 data : {
@@ -711,24 +707,32 @@ LogicTable.UpdateWALK = (table) => {
                     next : {
                         pos : next,
                     }
-                }
+                };
             };
 
             broad_msg(pids, brd);
-
         }
 
-        // 设置下一家出牌
-
         // 增加历史记录
+        add_history(table, {
+            ts : now,
+            pos : pos,
+            type : HISTORY_TYPE_HAND,
+            data : { card: temp.hand_prev },
+        });
     }
-
-
-
 };
 
 LogicTable.MessageWALK = (table, pid, msg) => {
     let {conf, calc, data } = table;
+
+    switch(msg.id) {
+        case msg_hand_req:
+        {
+            
+        }
+        break;
+    }
 
     // 牌的合法性检测
     // 胜负判断
@@ -739,29 +743,33 @@ LogicTable.MessageWALK = (table, pid, msg) => {
 // stage OVER
 
 LogicTable.EnterOVER = (table) => {
-    // TODO 保存数据
+    let {conf, calc, deck, temp } = table;
+
+    calc.history.push(deck);
 }
 
 LogicTable.UpdateOVER = (table) => {
-    let {conf, calc, data } = table;
+    let {conf, calc, deck, temp } = table;
 
     // 检测牌副是否全部完成
-    if (data.deck_data.index == conf.deck) {
+    if (deck.index == conf.deck) {
         gCoreEvtMgr.Fire(gConst.EVT_DDZ_Table_Finished, conf.tid);
     } else {
-        init_deck();        
+        init_deck();
     }
 };
 
 LogicTable.MessageOVER = (table, pid, msg) => {
-    let {conf, calc, data } = table;
+    let {conf, calc, deck, temp } = table;
 }
 
 // ----------------------------------------------------------------------------
 // stage PASS
 
 LogicTable.EnterPASS = (table) => {
-    // TODO 保存数据
+    let {conf, calc, deck, temp } = table;
+
+    calc.history.push(deck);
 }
 
 LogicTable.UpdatePASS = (table) => {
@@ -771,12 +779,12 @@ LogicTable.UpdatePASS = (table) => {
     if (data.deck_data.index == conf.deck) {
         gCoreEvtMgr.Fire(gConst.EVT_DDZ_Table_Finished, conf.tid);
     } else {
-        init_deck();        
+        init_deck();
     }
 };
 
 LogicTable.MessagePASS = (table, pid, msg) => {
-    let {conf, calc, data } = table;
+    let {conf, calc, deck, temp } = table;
 }
 
 // ----------------------------------------------------------------------------
@@ -816,7 +824,8 @@ exports.StartTable = (conf) => {
     let table = {
         conf,
         calc: create_table_calc(),
-        data: create_table_data(),  
+        deck: create_table_deck(),
+        temp: create_table_temp(),
     };
 
     init_deck(table);
