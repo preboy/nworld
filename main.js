@@ -16,7 +16,6 @@ g_load_module('.', 'net_mgr');
 g_load_module('.', 'plr_mgr');
 
 g_load_module('mod', 'game');
-g_load_module('mod', 'ddz');
 
 
 // ----------------------------------------------------------------------------
@@ -53,10 +52,6 @@ if (process.stdin.isTTY) {
 
 on_start();
 
-let server_run_tid = setInterval(() => {
-    gModDdz.Update();
-}, 10);
-
 
 // ----------------------------------------------------------------------------
 // server events
@@ -67,7 +62,6 @@ function on_start() {
         gCoreEvtMgr.Fire(gConst.EVT_SYS_SERVER_READY);
     });
 
-    gModDdz.Start();
     gModGame.Start();
     gPlrMgr.Start();
 
@@ -85,7 +79,6 @@ function on_stop() {
 
     gPlrMgr.Stop();
     gModGame.Stop();
-    gModDdz.Stop();
 
     gDbMgr.Stop();
 }
