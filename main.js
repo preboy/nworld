@@ -112,7 +112,6 @@ function ProcessExit() {
         return;
     }
 
-    clearInterval(server_run_tid);
     stoping = true;
     on_stop();
 
