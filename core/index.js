@@ -4,6 +4,11 @@ const assert = require('assert');
 global.__mod_data = {};
 let mod_data = global.__mod_data;
 
+console.log_ = console.log;
+console.log  = function(...args) {
+    console.log_(`[${new Date().toISOString()}]`, ...args);
+}
+
 // ----------------------------------------------------------------------------
 
 // 模块私有数据
