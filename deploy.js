@@ -21,5 +21,5 @@ exports.redis = {
 };
 
 // mongodb addr
-exports.dbGame = `mongodb://mongouser:mongopass@118.24.48.149:27017/nw_game${gameId}?authSource=admin`;
-exports.dbStat = `mongodb://mongouser:mongopass@118.24.48.149:27017/nw_stat${gameId}?authSource=admin`;
+exports.dbGame = `mongodb://mongouser:mongopass@127.0.0.1:27017/nw_game${gameId}?authSource=admin`;
+exports.dbStat = `mongodb://mongouser:mongopass@127.0.0.1:27017/nw_stat${gameId}?authSource=admin`;
