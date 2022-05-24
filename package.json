@@ -9,13 +9,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.27.2",
     "colors": "^1.4.0",
     "ejs": "^3.0.1",
     "express": "^4.17.1",
     "mongodb": "^3.3.0-beta2",
     "morgan": "^1.9.1",
-    "redis": "^2.8.0",
+    "redis": "^4.1.0",
     "ws": "^7.1.1"
   },
   "repository": {
