@@ -31,10 +31,12 @@ function start(cb) {
         ready = false;
         console.log("redis closed");
     });
+
+    client.connect();
 }
 
 function stop() {
-    if (client) {
+    if (client && client.isOpen) {
         client.quit();
     }
 }
